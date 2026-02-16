@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아빠 생일 게임</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(100vh) rotate(0deg); }
+            50% { transform: translateY(-20vh) rotate(180deg); }
+        }
+        .animate-float {
+            animation: float linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+        .animate-shake {
+            animation: shake 0.5s infinite;
+        }
+        @keyframes credits {
+            from { transform: translateY(100vh); }
+            to { transform: translateY(-100%); }
+        }
+        .animate-credits {
+            animation: credits linear forwards;
+        }
+        .hearts-hud {
+            position: fixed;
+            top: 50%;
+            right: 16px;
+            transform: translateY(-50%);
+            z-index: 9999;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            padding: 16px 12px;
+            border-radius: 9999px;
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-size: 28px;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        @keyframes money-rain {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0.8; }
+        }
+        .money-rain {
+            animation: money-rain linear infinite;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        const CORRECT_ANSWERS = {
+            0: '1960',
+            1: '김치찌개',
+            2: '골프',
+            3: '삼성',
+            4: '서울',
+            5: '소주',
+            6: '축구',
+            7: '봄',
+            8: '아침',
+            9: '가족'
+        };
+
+        const MESSAGE_DURATION = 15000;
+
+        let state = {
+            screen: 'landing',
+            hearts: 10,
+            hoverText: false,
+            showButtons: false,
+            noButtonPos: { x: 0, y: 0 },
+            yesButtonScale: 1,
+            showConfetti: false,
+            floatingEmojis: [],
+            currentQuestion: 0,
+            q0Answer: '',
+            showCongratsButton: false,
+            showMessage: false,
+            creditsFinished: false,
+            showGiftMessage: false,
+            showGiftDetails: false
+        };
+
+        function initFloatingEmojis() {
+            const emojis = [];
+            const emojiList = ['🎂', '🎉', '🎁', '🎈', '🎊', '🍰', '🥳'];
+            
+            for (let i = 0; i < 25; i++) {
+                let left, top;
+                let attempts = 0;
+                const maxAttempts = 50;
+                
+                do {
+                    left = Math.random() * 100;
+                    top = Math.random() * 100;
+                    attempts++;
+                    
+                    const isInHUDZone = (left > 70 && top < 15);
+                    
+                    if (!isInHUDZone || attempts >= maxAttempts) {
+                        break;
+                    }
+                } while (attempts < maxAttempts);
+                
+                emojis.push({
+                    id: i,
+                    emoji: emojiList[Math.floor(Math.random() * emojiList.length)],
+                    left: left,
+                    top: top,
+                    delay: Math.random() * 5,
+                    duration: 15 + Math.random() * 10,
+                    size: 20 + Math.random() * 40
+                });
+            }
+            state.floatingEmojis = emojis;
+        }
+
+        function renderFloatingEmojis() {
+            return state.floatingEmojis.map(function(item) {
+                return '<div class="absolute opacity-20 animate-float" style="left: ' + item.left + '%; top: ' + item.top + '%; animation-delay: ' + item.delay + 's; animation-duration: ' + item.duration + 's; font-size: ' + item.size + 'px;">' + item.emoji + '</div>';
+            }).join('');
+        }
+
+        function renderHearts() {
+            var hearts = '';
+            for (var i = 0; i < state.hearts; i++) {
+                hearts += '<div>💙</div>';
+            }
+            return '<div class="hearts-hud">' + hearts + '</div>';
+        }
+
+        function handleNoProximity(e) {
+            if (state.hearts <= 0) return;
+            
+            const button = e.target;
+            const rect = button.getBoundingClientRect();
+            const maxX = window.innerWidth - rect.width - 20;
+            const maxY = window.innerHeight - rect.height - 20;
+            
+            state.noButtonPos = {
+                x: Math.random() * maxX,
+                y: Math.random() * maxY
+            };
+            state.yesButtonScale += 0.25;
+            state.hearts = Math.max(0, state.hearts - 1);
+            
+            if (state.hearts === 0) {
+                state.screen = 'fail';
+            }
+            
+            render();
+        }
+
+        function handleNoClick() {
+            alert("오류: 다시 생각해보세요!");
+        }
+
+        function handleYesClick() {
+            state.screen = 'game';
+            state.showConfetti = true;
+            render();
+            
+            setTimeout(function() {
+                state.showConfetti = false;
+                render();
+            }, 3000);
+        }
+
+        function handleAnswer(questionNum, answer) {
+            const correct = CORRECT_ANSWERS[questionNum];
+            
+            if (answer === correct) {
+                if (questionNum === 9) {
+                    state.showCongratsButton = true;
+                } else {
+                    state.currentQuestion = questionNum + 1;
+                }
+                render();
+            } else {
+                state.hearts = Math.max(0, state.hearts - 1);
+                if (state.hearts === 0) {
+                    setTimeout(function() {
+                        state.screen = 'fail';
+                        render();
+                    }, 100);
+                } else {
+                    render();
+                }
+            }
+        }
+
+        function handleTitleHover() {
+            state.hoverText = true;
+            state.showButtons = true;
+            render();
+        }
+
+        function submitQ0() {
+            handleAnswer(0, state.q0Answer);
+        }
+
+        function showMessage() {
+            state.screen = 'success';
+            state.showMessage = true;
+            render();
+            
+            setTimeout(function() {
+                state.creditsFinished = true;
+                render();
+            }, MESSAGE_DURATION);
+        }
+
+        function showGiftMessage() {
+            state.showGiftMessage = true;
+            render();
+        }
+
+        function showGiftDetails() {
+            state.showGiftDetails = true;
+            render();
+        }
+
+        function renderLandingScreen() {
+            var html = '<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center relative overflow-hidden">';
+            html += renderFloatingEmojis();
+            html += renderHearts();
+            html += '<div class="text-center z-10 px-4">';
+            html += '<h1 class="text-6xl font-bold text-blue-600 mb-12 cursor-pointer transition-all duration-300" onmouseenter="handleTitleHover()">';
+            html += state.hoverText ? '미션이 있습니다' : '아빠 안녕하세요';
+            html += '</h1>';
+            
+            if (state.showButtons) {
+                html += '<div class="flex gap-6 justify-center items-center">';
+                html += '<button onclick="handleYesClick()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold text-2xl px-12 py-6 rounded-full shadow-lg transition-all duration-200 hover:shadow-2xl z-20" style="transform: scale(' + state.yesButtonScale + ');">네! 🎉</button>';
+                html += '<button onmouseenter="handleNoProximity(event)" onclick="handleNoClick()" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold text-2xl px-12 py-6 rounded-full shadow-lg transition-all duration-200 z-20" style="position: ' + (state.noButtonPos.x || state.noButtonPos.y ? 'fixed' : 'relative') + '; left: ' + (state.noButtonPos.x ? state.noButtonPos.x + 'px' : 'auto') + '; top: ' + (state.noButtonPos.y ? state.noButtonPos.y + 'px' : 'auto') + '; transition: left 0.3s ease, top 0.3s ease;">아니요 😢</button>';
+                html += '</div>';
+            }
+            
+            html += '</div></div>';
+            return html;
+        }
+
+        function renderGameScreen() {
+            var html = '<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-8 relative overflow-hidden flex items-center justify-center">';
+            html += renderFloatingEmojis();
+            
+            if (state.showConfetti) {
+                html += '<div class="absolute inset-0 pointer-events-none z-50">';
+                for (var i = 0; i < 80; i++) {
+                    var emojis = ['🎂', '🎉', '🎁', '🎈', '🎊'];
+                    html += '<div class="absolute animate-bounce" style="left: ' + (Math.random() * 100) + '%; top: -' + (Math.random() * 20) + '%; animation-delay: ' + (Math.random() * 2) + 's; animation-duration: ' + (2 + Math.random() * 3) + 's; font-size: ' + (15 + Math.random() * 15) + 'px;">' + emojis[Math.floor(Math.random() * 5)] + '</div>';
+                }
+                html += '</div>';
+            }
+
+            html += renderHearts();
+            html += '<div class="max-w-2xl mx-auto bg-white/80 backdrop-blur rounded-3xl shadow-xl p-8 relative z-10">';
+            
+            if (state.showCongratsButton) {
+                html += '<div class="text-center space-y-8">';
+                html += '<h1 class="text-4xl font-bold text-blue-600">축하합니다! 모든 문제를 통과했습니다. 🎉</h1>';
+                html += '<p class="text-2xl text-gray-700">메시지가 있습니다...</p>';
+                html += '<button onclick="showMessage()" class="bg-blue-500 text-white px-12 py-6 rounded-full text-2xl font-bold hover:bg-blue-600 shadow-2xl animate-bounce">메시지 읽기 💌</button>';
+                html += '</div>';
+            } else {
+                html += '<h1 class="text-4xl font-bold text-blue-600 text-center mb-8">생일 퀴즈 게임</h1>';
+                html += '<div class="space-y-8">';
+                
+                if (state.currentQuestion === 0) {
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🎂 아빠는 몇 년생이신가요?</p>';
+                    html += '<input type="text" maxlength="4" id="q0-input" value="' + state.q0Answer + '" placeholder="XXXX" class="w-full px-6 py-4 text-2xl border-2 border-blue-300 rounded-xl focus:border-blue-500 focus:outline-none text-center" />';
+                    html += '<button onclick="submitQ0()" class="w-full bg-blue-500 text-white py-4 rounded-xl text-xl font-bold hover:bg-blue-600 transition">제출</button></div>';
+                } else if (state.currentQuestion === 1) {
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🍲 아빠가 제일 좋아하는 음식은?</p>';
+                    html += '<div class="space-y-3">';
+                    html += '<button onclick="handleAnswer(1, \'김치찌개\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">김치찌개</button>';
+                    html += '<button onclick="handleAnswer(1, \'된장찌개\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">된장찌개</button>';
+                    html += '<button onclick="handleAnswer(1, \'삼겹살\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">삼겹살</button>';
+                    html += '</div></div>';
+                } else if (state.currentQuestion === 2) {
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">⛳ 아빠의 취미는?</p>';
+                    html += '<div class="space-y-3">';
+                    html += '<button onclick="handleAnswer(2, \'골프\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">골프</button>';
+                    html += '<button onclick="handleAnswer(2, \'낚시\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">낚시</button>';
+                    html += '<button onclick="handleAnswer(2, \'등산\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">등산</button>';
+                    html += '</div></div>';
+                } else if (state.currentQuestion === 3) {
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">📱 아빠가 쓰시는 핸드폰 브랜드는?</p>';
+                    html += '<div class="space-y-3">';
+                    html += '<button onclick="handleAnswer(3, \'삼성\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">삼성</button>';
+                    html += '<button onclick="handleAnswer(3, \'애플\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">애플</button>';
+                    html += '<button onclick="handleAnswer(3, \'LG\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">LG</button>';
+                    html += '</div></div>';
+                } else if (state.currentQuestion === 4) {
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🏙️ 아빠가 태어난 도시는?</p>';
+                    html += '<div class="space-y-3">';
+                    html += '<button onclick="handleAnswer(4, \'서울\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">서울</button>';
+                    html += '<button onclick="handleAnswer(4, \'부산\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">부산</button>';
+                    html += '<button onclick="handleAnswer(4, \'대구\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">대구</button>';
+                    html += '</div></div>';
+                } else if (state.currentQuestion === 5) {
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🍶 아빠가 좋아하는 술은?</p>';
+                    html += '<div class="space-y-3">';
+                    html += '<button onclick="handleAnswer(5, \'소주\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">소주</button>';
+                    html += '<button onclick="handleAnswer(5, \'맥주\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">맥주</button>';
+                    html += '<button onclick="handleAnswer(5, \'막걸리\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">막걸리</button>';
+                    html += '</div></div>';
+                } else if (state.currentQuestion === 6) {
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">⚽ 아빠가 좋아하는 스포츠는?</p>';
+                    html += '<div class="space-y-3">';
+                    html += '<button onclick="handleAnswer(6, \'축구\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">축구</button>';
+                    html += '<button onclick="handleAnswer(6, \'야구\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">야구</button>';
+                    html += '<button onclick="handleAnswer(6, \'농구\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">농구</button>';
+                    html += '</div></div>';
+                } else if (state.currentQuestion === 7) {
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🌸 아빠가 좋아하는 계절은?</p>';
+                    html += '<div class="space-y-3">';
+                    html += '<button onclick="handleAnswer(7, \'봄\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">봄</button>';
+                    html += '<button onclick="handleAnswer(7, \'여름\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">여름</button>';
+                    html += '<button onclick="handleAnswer(7, \'가을\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">가을</button>';
+                    html += '</div></div>';
+                } else if (state.currentQuestion === 8) {
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">☀️ 아빠는 아침형? 저녁형?</p>';
+                    html += '<div class="space-y-3">';
+                    html += '<button onclick="handleAnswer(8, \'아침\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">아침형 인간</button>';
+                    html += '<button onclick="handleAnswer(8, \'저녁\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">저녁형 인간</button>';
+                    html += '<button onclick="handleAnswer(8, \'둘다\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">둘 다</button>';
+                    html += '</div></div>';
+                } else if (state.currentQuestion === 9) {
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">💙 아빠에게 가장 소중한 것은?</p>';
+                    html += '<div class="space-y-3">';
+                    html += '<button onclick="handleAnswer(9, \'가족\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">가족</button>';
+                    html += '<button onclick="handleAnswer(9, \'건강\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">건강</button>';
+                    html += '<button onclick="handleAnswer(9, \'돈\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">돈</button>';
+                    html += '</div></div>';
+                }
+                
+                html += '</div>';
+            }
+            
+            html += '</div></div>';
+            return html;
+        }
+
+        function renderFailScreen() {
+            return '<div class="min-h-screen bg-black flex items-center justify-center animate-pulse"><h1 class="text-6xl font-bold text-red-600 animate-shake">실패입니다.</h1></div>';
+        }
+
+        function renderSuccessScreen() {
+            if (state.showMessage && !state.creditsFinished) {
+                var html = '<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 relative overflow-hidden">';
+                html += '<div class="absolute inset-0 overflow-hidden">';
+                html += '<div class="w-full flex justify-center animate-credits" style="animation-duration: ' + (MESSAGE_DURATION / 1000) + 's;">';
+                html += '<div class="space-y-32 text-7xl leading-relaxed max-w-7xl font-bold text-blue-600 text-center px-8">';
+                html += '<div class="space-y-6"><p>사랑하는 아빠께</p></div>';
+                html += '<div class="space-y-6"><p>항상 우리 가족을 위해</p><p>열심히 일하시는</p><p>아빠께 감사드립니다</p></div>';
+                html += '<div class="space-y-6"><p>아빠의 따뜻한 미소와</p><p>든든한 어깨가</p><p>저에게 큰 힘이 됩니다</p></div>';
+                html += '<div class="space-y-6"><p>언제나 건강하시고</p><p>행복하시길 바랍니다</p></div>';
+                html += '<div class="space-y-6"><p>생일 축하드려요!</p></div>';
+                html += '<div class="space-y-6"><p>사랑합니다 아빠</p></div>';
+                html += '<div class="space-y-6"><p>🎂🎉🎁🎈🎊💙</p></div>';
+                html += '<div class="h-32"></div>';
+                html += '</div></div></div></div>';
+                return html;
+            }
+            
+            if (state.creditsFinished && !state.showGiftMessage) {
+                return '<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center overflow-hidden relative"><div class="text-center z-20"><p class="text-6xl mb-8 font-bold text-blue-600">작은 선물이 있습니다 🎁</p><button onclick="showGiftMessage()" class="bg-blue-500 text-white px-12 py-6 rounded-full text-3xl font-bold hover:bg-blue-600 shadow-2xl animate-bounce">선물 확인하기 💝</button></div></div>';
+            }
+            
+            if (state.showGiftMessage && !state.showGiftDetails) {
+                return '<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center overflow-hidden relative"><div class="text-center px-8 z-20"><p class="text-5xl mb-8 font-bold text-blue-600">준비했습니다! 🎉</p><button onclick="showGiftDetails()" class="bg-blue-500 text-white px-12 py-6 rounded-full text-3xl font-bold hover:bg-blue-600 shadow-2xl">계속 💙</button></div></div>';
+            }
+            
+            if (state.showGiftDetails) {
+                var html = '<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center overflow-hidden relative">';
+                
+                // Money rain effect
+                html += '<div class="absolute inset-0 pointer-events-none z-40">';
+                for (var i = 0; i < 30; i++) {
+                    html += '<div class="absolute money-rain text-6xl" style="left: ' + (Math.random() * 100) + '%; animation-delay: ' + (Math.random() * 5) + 's; animation-duration: ' + (3 + Math.random() * 4) + 's;">💵</div>';
+                }
+                html += '</div>';
+                
+                html += '<div class="text-center px-8 max-w-4xl z-20">';
+                html += '<h2 class="text-7xl font-bold text-blue-600 mb-12 animate-pulse">생일 선물 🎁</h2>';
+                html += '<div class="bg-white/90 backdrop-blur rounded-3xl shadow-2xl p-16 border-4 border-blue-400">';
+                html += '<div class="space-y-8">';
+                html += '<p class="text-8xl font-bold text-green-600 animate-bounce">💰 100,000원 💰</p>';
+                html += '<p class="text-4xl text-gray-700 mt-8">맛있는 거 사드세요!</p>';
+                html += '<p class="text-3xl text-blue-600 font-semibold mt-6">사랑합니다 아빠! ❤️</p>';
+                html += '</div></div></div></div>';
+                return html;
+            }
+            
+            return '';
+        }
+
+        function render() {
+            const app = document.getElementById('app');
+            
+            if (state.screen === 'landing') {
+                app.innerHTML = renderLandingScreen();
+            } else if (state.screen === 'game') {
+                app.innerHTML = renderGameScreen();
+                const q0Input = document.getElementById('q0-input');
+                if (q0Input) {
+                    q0Input.addEventListener('input', function(e) {
+                        state.q0Answer = e.target.value;
+                    });
+                }
+            } else if (state.screen === 'fail') {
+                app.innerHTML = renderFailScreen();
+            } else if (state.screen === 'success') {
+                app.innerHTML = renderSuccessScreen();
+            }
+        }
+
+        initFloatingEmojis();
+        render();
+    </script>
+</body>
+</html>
