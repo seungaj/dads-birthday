@@ -285,18 +285,18 @@
                     html += '<input type="text" maxlength="4" id="q0-input" value="' + state.q0Answer + '" placeholder="XXXX" class="w-full px-6 py-4 text-2xl border-2 border-blue-300 rounded-xl focus:border-blue-500 focus:outline-none text-center" />';
                     html += '<button onclick="submitQ0()" class="w-full bg-blue-500 text-white py-4 rounded-xl text-xl font-bold hover:bg-blue-600 transition">제출</button></div>';
                 } else if (state.currentQuestion === 1) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🍲 엄마가 제일 좋아하는 아이스크림 맛은?</p>';
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🍦 엄마가 제일 좋아하는 아이스크림 맛은?</p>';
                     html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(1, \'딸기\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">김치찌개</button>';
-                    html += '<button onclick="handleAnswer(1, \'피스타치오\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">된장찌개</button>';
-                    html += '<button onclick="handleAnswer(1, \'초코\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">삼겹살</button>';
+                    html += '<button onclick="handleAnswer(1, \'딸기\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">딸기</button>';
+                    html += '<button onclick="handleAnswer(1, \'피스타치오\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">피스타치오</button>';
+                    html += '<button onclick="handleAnswer(1, \'초코\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">초코</button>';
                     html += '</div></div>';
                 } else if (state.currentQuestion === 2) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">딸 대학 입학 년도는?</p>';
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🎓 딸 대학 입학 년도는?</p>';
                     html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(2, \'2016\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">골프</button>';
-                    html += '<button onclick="handleAnswer(2, \'2017\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">낚시</button>';
-                    html += '<button onclick="handleAnswer(2, \'2018\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">등산</button>';
+                    html += '<button onclick="handleAnswer(2, \'2016\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">2016년</button>';
+                    html += '<button onclick="handleAnswer(2, \'2017\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">2017년</button>';
+                    html += '<button onclick="handleAnswer(2, \'2018\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">2018년</button>';
                     html += '</div></div>';
                 } else if (state.currentQuestion === 3) {
                     html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">📱 아빠가 딸에게 사준 첫 스마트폰 브랜드는?</p>';
@@ -306,46 +306,46 @@
                     html += '<button onclick="handleAnswer(3, \'LG\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">LG</button>';
                     html += '</div></div>';
                 } else if (state.currentQuestion === 4) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🏙️ 엄마가 아빠 닮아서 싫어하는 점은?</p>';
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">😅 엄마가 아빠 닮아서 싫어하는 점은?</p>';
                     html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(4, \'키\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">서울</button>';
-                    html += '<button onclick="handleAnswer(4, \'예민함\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">부산</button>';
-                    html += '<button onclick="handleAnswer(4, \'음악적 재능\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">대구</button>';
+                    html += '<button onclick="handleAnswer(4, \'키\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">키</button>';
+                    html += '<button onclick="handleAnswer(4, \'예민함\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">예민함</button>';
+                    html += '<button onclick="handleAnswer(4, \'음악적 재능\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">음악적 재능</button>';
                     html += '</div></div>';
                 } else if (state.currentQuestion === 5) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🍶 딸이 가장 좋아하는 술 종류는?</p>';
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🍺 딸이 가장 좋아하는 술 종류는?</p>';
                     html += '<div class="space-y-3">';
                     html += '<button onclick="handleAnswer(5, \'소주\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">소주</button>';
                     html += '<button onclick="handleAnswer(5, \'맥주\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">맥주</button>';
-                    html += '<button onclick="handleAnswer(5, \'와인\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">막걸리</button>';
+                    html += '<button onclick="handleAnswer(5, \'와인\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">와인</button>';
                     html += '</div></div>';
                 } else if (state.currentQuestion === 6) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">⚽ 우리 가족에서 제일 고집 센 사람은?</p>';
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">😤 우리 가족에서 제일 고집 센 사람은?</p>';
                     html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(6, \'엄마\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">축구</button>';
-                    html += '<button onclick="handleAnswer(6, \'아빠\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">야구</button>';
-                    html += '<button onclick="handleAnswer(6, \'승아\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">농구</button>';
+                    html += '<button onclick="handleAnswer(6, \'엄마\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">엄마</button>';
+                    html += '<button onclick="handleAnswer(6, \'아빠\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">아빠</button>';
+                    html += '<button onclick="handleAnswer(6, \'승아\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">승아</button>';
                     html += '</div></div>';
                 } else if (state.currentQuestion === 7) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🌸 엄마가 화나면 하는 행동은?</p>';
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">😠 엄마가 화나면 하는 행동은?</p>';
                     html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(7, \'인상 찌푸르기\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">봄</button>';
-                    html += '<button onclick="handleAnswer(7, \'한숨\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">여름</button>';
-                    html += '<button onclick="handleAnswer(7, \'노려보기\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">가을</button>';
+                    html += '<button onclick="handleAnswer(7, \'인상 찌푸르기\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">인상 찌푸르기</button>';
+                    html += '<button onclick="handleAnswer(7, \'한숨\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">한숨</button>';
+                    html += '<button onclick="handleAnswer(7, \'노려보기\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">노려보기</button>';
                     html += '</div></div>';
                 } else if (state.currentQuestion === 8) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">☀️ 엄마가 아빠에게 가장 바라는 건?</p>';
+                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">💝 엄마가 아빠에게 가장 바라는 건?</p>';
                     html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(8, \'올해 억대 벌기\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">아침형 인간</button>';
-                    html += '<button onclick="handleAnswer(8, \'크루즈 여행\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">저녁형 인간</button>';
-                    html += '<button onclick="handleAnswer(8, \'건강\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">둘 다</button>';
+                    html += '<button onclick="handleAnswer(8, \'올해 억대 벌기\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">올해 억대 벌기</button>';
+                    html += '<button onclick="handleAnswer(8, \'크루즈 여행\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">크루즈 여행</button>';
+                    html += '<button onclick="handleAnswer(8, \'건강\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">건강</button>';
                     html += '</div></div>';
                 } else if (state.currentQuestion === 9) {
                     html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">💙 딸이 아빠에게 가장 하고 싶은 말은?</p>';
                     html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(9, \'수고하셨습니다\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">가족</button>';
-                    html += '<button onclick="handleAnswer(9, \'감사합니다\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">건강</button>';
-                    html += '<button onclick="handleAnswer(9, \'사랑합니다\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">돈</button>';
+                    html += '<button onclick="handleAnswer(9, \'수고하셨습니다\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">수고하셨습니다</button>';
+                    html += '<button onclick="handleAnswer(9, \'감사합니다\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">감사합니다</button>';
+                    html += '<button onclick="handleAnswer(9, \'사랑합니다\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">사랑합니다</button>';
                     html += '</div></div>';
                 }
                 
