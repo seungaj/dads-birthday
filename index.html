@@ -731,7 +731,7 @@ function renderGame() {
             {label:'Q.07',icon:'😤',text:'우리 가족에서 제일 고집 센 사람은?',choices:['엄마','아빠','승아']},
             {label:'Q.08',icon:'😠',text:'엄마가 화나면 하는 행동은?',choices:['인상 찌푸르기','한숨','노려보기']},
             {label:'Q.09',icon:'💝',text:'엄마가 아빠에게 가장 바라는 건?',choices:['올해 억대 벌기','크루즈 여행','건강']},
-            {label:'Q.10',icon:'💙',text:'딸이 아빠에게 가장 하고 싶은 말은?',choices:['수고하셨습니다','감사합니다','사랑합니다']},
+            {label:'Q.10',icon:'💙',text:'딸이 아빠에게 가장 하고 싶은 말은?',choices:['생일축하합니다','감사합니다','사랑합니다']},
         ];
         const curr = QS[q];
         const vals = curr.vals || curr.choices;
@@ -812,15 +812,15 @@ function renderSuccess() {
         return `<div class="screen" style="position:relative;overflow:hidden;">${renderFloats()}
         <div class="container text-center" style="position:relative;z-index:5;">
             <div class="pixel" style="font-size:12px;color:var(--green);text-shadow:var(--glow-green);margin-bottom:20px;">BONUS STAGE UNLOCKED</div>
-            <div style="font-size:32px;color:var(--yellow);margin-bottom:32px;">작은 선물이 있습니다 🎁</div>
-            <button class="btn btn-yellow" onclick="doShowGiftMsg()" onmouseenter="sfxCoin()">[ 선물 확인하기 💝 ]</button>
+            <div style="font-size:32px;color:var(--yellow);margin-bottom:32px;">2026년부터 홍예원님의 생일을 챙기기로 맹새합니까? 💝</div>
+            <button class="btn btn-yellow" onclick="doShowGiftMsg()" onmouseenter="sfxCoin()">[네, 맛있는 식사와 선물을 대접하겠습니다]</button>
         </div></div>`;
     }
     if (state.showGiftMessage && !state.showGiftDetails) {
         return `<div class="screen" style="position:relative;overflow:hidden;">${renderFloats()}
         <div class="container text-center" style="position:relative;z-index:5;">
             <div class="pixel" style="font-size:11px;color:var(--yellow);text-shadow:var(--glow-yellow);margin-bottom:16px;">★ SPECIAL GIFT ★</div>
-            <div style="font-size:30px;color:var(--white);margin-bottom:32px;">준비했습니다! 🎉</div>
+            <div style="font-size:30px;color:var(--white);margin-bottom:32px;">선물 확인하기💝</div>
             <button class="btn" onclick="doShowGiftDetails()" onmouseenter="sfxCoin()">[ 계속 ▶ ]</button>
         </div></div>`;
     }
