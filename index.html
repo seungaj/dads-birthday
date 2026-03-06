@@ -4,776 +4,927 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>아빠 생일 게임</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
     <style>
-        @keyframes float {
-            0%, 100% { transform: translateY(100vh) rotate(0deg); }
-            50% { transform: translateY(-20vh) rotate(180deg); }
+        :root {
+            --bg: #0a0a0f;
+            --panel: #0f0f1a;
+            --border: #2a2a4a;
+            --cyan: #00f5ff;
+            --yellow: #ffd700;
+            --magenta: #ff00aa;
+            --green: #39ff14;
+            --red: #ff2244;
+            --white: #e8e8f0;
+            --dim: #4a4a6a;
+            --glow-cyan: 0 0 8px #00f5ff, 0 0 20px rgba(0,245,255,0.4);
+            --glow-yellow: 0 0 8px #ffd700, 0 0 20px rgba(255,215,0,0.4);
+            --glow-green: 0 0 8px #39ff14, 0 0 20px rgba(57,255,20,0.4);
+            --glow-magenta: 0 0 8px #ff00aa, 0 0 20px rgba(255,0,170,0.4);
         }
-        .animate-float {
-            animation: float linear infinite;
-            pointer-events: none;
-            z-index: 1;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg);
+            color: var(--white);
+            font-family: 'VT323', monospace;
+            font-size: 22px;
+            min-height: 100vh;
+            overflow-x: hidden;
+            cursor: crosshair;
         }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
-            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        /* Scanlines */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.15) 2px,rgba(0,0,0,0.15) 4px);
+            pointer-events: none; z-index: 9999;
         }
-        .animate-shake {
-            animation: shake 0.5s infinite;
+        /* CRT vignette */
+        body::after {
+            content: '';
+            position: fixed; inset: 0;
+            background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
+            pointer-events: none; z-index: 9998;
         }
-        @keyframes credits {
-            from { transform: translateY(100vh); }
-            to { transform: translateY(-100%); }
+        .grid-bg {
+            position: fixed; inset: 0;
+            background-image:
+                linear-gradient(rgba(0,245,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,245,255,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none; z-index: 0;
         }
-        .animate-credits {
-            animation: credits linear forwards;
+        #app { position: relative; z-index: 10; }
+
+        /* Audio Toggle */
+        #audio-toggle {
+            position: fixed; top: 14px; left: 16px;
+            z-index: 9997;
+            background: rgba(10,10,15,0.92);
+            border: 1px solid var(--border);
+            padding: 7px 12px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px; color: var(--dim);
+            cursor: pointer; letter-spacing: 1px;
+            transition: color 0.2s, border-color 0.2s;
         }
+        #audio-toggle:hover { color: var(--cyan); border-color: var(--cyan); }
+        #audio-toggle.on { color: var(--green); border-color: var(--green); text-shadow: var(--glow-green); }
+
+        .pixel { font-family: 'Press Start 2P', monospace; line-height: 1.6; }
+        .pixel-sm { font-family: 'Press Start 2P', monospace; font-size: 10px; line-height: 1.8; }
+        .pixel-xs { font-family: 'Press Start 2P', monospace; font-size: 8px; line-height: 2; }
+
+        .panel { background: var(--panel); border: 2px solid var(--border); position: relative; }
+        .panel::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(0,245,255,0.03) 0%,transparent 60%); pointer-events:none; }
+
+        .bracketed { position: relative; }
+        .bracketed::before,.bracketed::after,.bracketed>.bracket-bl,.bracketed>.bracket-br {
+            content:''; position:absolute; width:14px; height:14px; border-color:var(--cyan); border-style:solid;
+        }
+        .bracketed::before { top:-2px; left:-2px; border-width:2px 0 0 2px; }
+        .bracketed::after  { top:-2px; right:-2px; border-width:2px 2px 0 0; }
+        .bracketed>.bracket-bl { bottom:-2px; left:-2px; border-width:0 0 2px 2px; }
+        .bracketed>.bracket-br { bottom:-2px; right:-2px; border-width:0 2px 2px 0; }
+
+        .btn {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 11px; padding: 14px 28px;
+            background: transparent; border: 2px solid var(--cyan);
+            color: var(--cyan); text-shadow: var(--glow-cyan);
+            box-shadow: var(--glow-cyan), inset 0 0 20px rgba(0,245,255,0.05);
+            cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
+            transition: all 0.15s; position: relative; overflow: hidden;
+        }
+        .btn::before { content:''; position:absolute; inset:0; background:var(--cyan); opacity:0; transition:opacity 0.15s; }
+        .btn:hover::before { opacity: 0.1; }
+        .btn:hover { box-shadow:0 0 16px var(--cyan),0 0 40px rgba(0,245,255,0.5),inset 0 0 20px rgba(0,245,255,0.1); transform:translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+        .btn-yellow { border-color:var(--yellow); color:var(--yellow); text-shadow:var(--glow-yellow); box-shadow:var(--glow-yellow),inset 0 0 20px rgba(255,215,0,0.05); }
+        .btn-yellow::before { background:var(--yellow); }
+        .btn-yellow:hover { box-shadow:0 0 16px var(--yellow),0 0 40px rgba(255,215,0,0.5),inset 0 0 20px rgba(255,215,0,0.1); }
+        .btn-green { border-color:var(--green); color:var(--green); text-shadow:var(--glow-green); box-shadow:var(--glow-green),inset 0 0 20px rgba(57,255,20,0.05); }
+        .btn-green:hover { box-shadow:0 0 16px var(--green),0 0 40px rgba(57,255,20,0.5); }
+        .btn-magenta { border-color:var(--magenta); color:var(--magenta); text-shadow:var(--glow-magenta); box-shadow:var(--glow-magenta); }
+        .btn-magenta:hover { box-shadow:0 0 16px var(--magenta),0 0 40px rgba(255,0,170,0.5); }
+        .btn-full { width: 100%; }
+
+        .choice-btn {
+            font-family: 'VT323', monospace; font-size: 24px;
+            padding: 12px 24px; background: transparent;
+            border: 1px solid var(--dim); color: var(--white);
+            cursor: pointer; width: 100%; text-align: left;
+            transition: all 0.12s; letter-spacing: 1px; position: relative;
+        }
+        .choice-btn::before { content:'▶ '; color:var(--cyan); opacity:0; transition:opacity 0.12s; }
+        .choice-btn:hover { border-color:var(--cyan); color:var(--cyan); background:rgba(0,245,255,0.05); padding-left:36px; }
+        .choice-btn:hover::before { opacity: 1; }
+
+        .retro-input {
+            width: 100%; background: rgba(0,245,255,0.04);
+            border: 1px solid var(--dim); border-bottom: 2px solid var(--cyan);
+            color: var(--cyan); font-family: 'VT323', monospace;
+            font-size: 28px; padding: 12px 16px; text-align: center;
+            letter-spacing: 8px; outline: none; caret-color: var(--cyan);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .retro-input:focus { border-color:var(--cyan); box-shadow:var(--glow-cyan); }
+        .retro-input::placeholder { color:var(--dim); letter-spacing:4px; }
+
         .hearts-hud {
-            position: fixed;
-            top: 50%;
-            right: 16px;
+            position: fixed; top: 50%; right: 20px;
             transform: translateY(-50%);
-            z-index: 9999;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(8px);
-            padding: 16px 12px;
-            border-radius: 9999px;
-            border: 2px solid rgba(59, 130, 246, 0.3);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            font-size: 28px;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
+            z-index: 9997;
+            background: rgba(10,10,15,0.92);
+            border: 1px solid var(--border);
+            padding: 14px 10px;
+            display: flex; flex-direction: column; gap: 2px; font-size: 22px;
         }
-        @keyframes money-rain {
-            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(100vh) rotate(360deg); opacity: 0.8; }
+        .hearts-hud .hud-label { font-family:'Press Start 2P',monospace; font-size:7px; color:var(--dim); text-align:center; margin-bottom:6px; letter-spacing:1px; }
+
+        .progress-track { width:100%; height:6px; background:var(--border); position:relative; overflow:hidden; }
+        .progress-fill { height:100%; background:linear-gradient(90deg,var(--cyan),var(--magenta)); box-shadow:var(--glow-cyan); transition:width 0.4s ease; }
+
+        .marquee-wrap { overflow:hidden; border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:8px 0; background:rgba(0,245,255,0.03); }
+        .marquee-inner { display:inline-block; white-space:nowrap; animation:marquee 18s linear infinite; font-family:'VT323',monospace; font-size:20px; color:var(--dim); letter-spacing:2px; }
+        @keyframes marquee { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
+
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+        .blink { animation: blink 1s step-end infinite; }
+
+        @keyframes glitch1 {
+            0%,100%{clip-path:inset(0 0 95% 0);transform:translate(-3px,0)}
+            20%{clip-path:inset(30% 0 50% 0);transform:translate(3px,0)}
+            40%{clip-path:inset(70% 0 10% 0);transform:translate(-3px,0)}
         }
-        .money-rain {
-            animation: money-rain linear infinite;
-            pointer-events: none;
+        @keyframes glitch2 {
+            0%,100%{clip-path:inset(50% 0 30% 0);transform:translate(3px,0)}
+            30%{clip-path:inset(10% 0 80% 0);transform:translate(-3px,0)}
         }
-        .sound-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10000;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(8px);
-            padding: 12px;
-            border-radius: 50%;
-            border: 2px solid rgba(59, 130, 246, 0.3);
-            cursor: pointer;
-            font-size: 24px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .sound-toggle:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-        }
+        .glitch-wrap { position:relative; display:inline-block; }
+        .glitch-wrap::before,.glitch-wrap::after { content:attr(data-text); position:absolute; inset:0; font-family:inherit; font-size:inherit; }
+        .glitch-wrap::before { color:var(--cyan); animation:glitch1 4s infinite; opacity:0.7; }
+        .glitch-wrap::after  { color:var(--magenta); animation:glitch2 4s 0.5s infinite; opacity:0.5; }
+
+        @keyframes float-up { 0%{transform:translateY(100vh) rotate(0deg);opacity:0.15} 50%{opacity:0.08} 100%{transform:translateY(-20vh) rotate(360deg);opacity:0} }
+        .float-emoji { position:absolute; animation:float-up linear infinite; pointer-events:none; font-size:28px; opacity:0.12; }
+
+        @keyframes shake { 0%,100%{transform:translateX(0)} 10%,50%,90%{transform:translateX(-12px)} 30%,70%{transform:translateX(12px)} }
+        .shake { animation: shake 0.4s infinite; }
+
+        @keyframes credits { from{transform:translateY(100vh)} to{transform:translateY(-120%)} }
+        .credits-roll { animation: credits linear forwards; }
+
+        @keyframes money-fall { 0%{transform:translateY(-120px) rotate(0deg);opacity:1} 100%{transform:translateY(110vh) rotate(720deg);opacity:0.6} }
+        .money-fall { position:absolute; animation:money-fall linear infinite; pointer-events:none; font-size:48px; }
+
+        @keyframes scanflash { 0%{opacity:0} 10%{opacity:0.5} 100%{opacity:0} }
+        .scan-flash { position:fixed; inset:0; background:rgba(0,245,255,0.06); pointer-events:none; z-index:9996; animation:scanflash 0.6s ease-out forwards; }
+
+        @keyframes redflash { 0%{opacity:0} 10%{opacity:0.45} 100%{opacity:0} }
+        .red-flash { position:fixed; inset:0; background:rgba(255,20,20,0.12); pointer-events:none; z-index:9996; animation:redflash 0.5s ease-out forwards; }
+
+        .screen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+        .container { max-width:680px; width:100%; }
+        .q-counter { font-family:'Press Start 2P',monospace; font-size:9px; color:var(--dim); letter-spacing:2px; }
+        .q-counter span { color:var(--yellow); }
+        .fail-screen { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:32px; background:#0a0005; }
+        .pixel-dots { display:flex; gap:6px; justify-content:center; margin:8px 0; }
+        .pixel-dot { width:6px; height:6px; background:var(--dim); }
+        .pixel-dot.active { background:var(--cyan); box-shadow:var(--glow-cyan); }
+        .stat-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(42,42,74,0.5); font-size:19px; }
+        .stat-row:last-child { border-bottom:none; }
+        .stat-label { color:var(--dim); }
+        .stat-val { color:var(--cyan); font-family:'Press Start 2P',monospace; font-size:10px; }
+        .gift-amount { font-family:'Press Start 2P',monospace; font-size:28px; color:var(--yellow); text-shadow:var(--glow-yellow); line-height:1.6; }
     </style>
 </head>
 <body>
-    <div id="app"></div>
+<div class="grid-bg"></div>
+<button id="audio-toggle" onclick="toggleAudio()">♪ BGM: OFF</button>
+<div id="app"></div>
 
-    <script>
-        const CORRECT_ANSWERS = {
-            0: '0820',
-            1: '피스타치오',
-            2: '2016',
-            3: 'LG',
-            4: '예민함',
-            5: '맥주',
-            6: '승아',
-            7: '한숨',
-            8: '건강',
-            9: '사랑합니다'
-        };
+<script>
+/* ═══════════════════════════════════════════════════
+   RETRO CHIPTUNE AUDIO ENGINE  —  Web Audio API only
+   No external files. Pure synthesized 8-bit sound.
+═══════════════════════════════════════════════════ */
+let _ctx = null;
+let bgmPlaying = false;
+let bgmOscNodes = [];
+let audioEnabled = false;
 
-        const MESSAGE_DURATION = 15000;
+function getCtx() {
+    if (!_ctx) _ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_ctx.state === 'suspended') _ctx.resume();
+    return _ctx;
+}
 
-        let state = {
-            screen: 'landing',
-            hearts: 10,
-            hoverText: false,
-            showButtons: false,
-            noButtonPos: { x: 0, y: 0 },
-            yesButtonScale: 1,
-            showConfetti: false,
-            floatingEmojis: [],
-            currentQuestion: 0,
-            q0Answer: '',
-            showCongratsButton: false,
-            showMessage: false,
-            creditsFinished: false,
-            showGiftMessage: false,
-            showGiftDetails: false,
-            soundEnabled: true,
-            musicEnabled: true
-        };
+/* ─ tiny utility: schedule an oscillator shot ─ */
+function shot(freq, type, start, dur, vol, pitchEnd) {
+    if (!audioEnabled) return;
+    const ctx = getCtx();
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, start);
+    if (pitchEnd) osc.frequency.exponentialRampToValueAtTime(pitchEnd, start + dur);
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(vol, start + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(start); osc.stop(start + dur + 0.01);
+    return osc;
+}
 
-        // Sound effects using Web Audio API
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioContext = new AudioContext();
+/* ─ noise burst ─ */
+function noise(start, dur, vol, hipass) {
+    if (!audioEnabled) return;
+    const ctx = getCtx();
+    const n = Math.floor(ctx.sampleRate * dur);
+    const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    const filt = ctx.createBiquadFilter();
+    const g = ctx.createGain();
+    filt.type = hipass ? 'highpass' : 'bandpass';
+    filt.frequency.value = hipass || 1000;
+    filt.Q.value = 0.5;
+    g.gain.setValueAtTime(vol, start);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    src.buffer = buf;
+    src.connect(filt); filt.connect(g); g.connect(ctx.destination);
+    src.start(start); src.stop(start + dur + 0.01);
+    return src;
+}
 
-        // Background music setup
-        let backgroundMusicGain = null;
-        let backgroundMusicNodes = [];
-        let musicInterval = null;
+/* ══════════════════════
+   SOUND EFFECTS
+══════════════════════ */
+function sfxClick() {
+    const t = getCtx().currentTime;
+    shot(880,'square',t,0.06,0.08);
+    shot(1320,'square',t+0.03,0.04,0.05);
+}
+function sfxHover() {
+    const t = getCtx().currentTime;
+    shot(520,'sine',t,0.05,0.04);
+}
+function sfxCoin() {
+    const t = getCtx().currentTime;
+    shot(1200,'square',t,0.04,0.06);
+    shot(1800,'sine',t+0.03,0.06,0.07);
+}
+function sfxCorrect() {
+    const t = getCtx().currentTime;
+    [523,659,784,1047].forEach((f,i) => shot(f,'square',t+i*0.07,0.13,0.1));
+    shot(1047,'sine',t+0.32,0.22,0.08,2093);
+}
+function sfxWrong() {
+    const t = getCtx().currentTime;
+    shot(440,'sawtooth',t,0.32,0.14,110);
+    noise(t,0.28,0.06,false);
+}
+function sfxLifeLost() {
+    const t = getCtx().currentTime;
+    shot(660,'square',t,0.12,0.1);
+    shot(523,'square',t+0.1,0.12,0.1);
+    shot(415,'square',t+0.2,0.2,0.12);
+}
+function sfxGameOver() {
+    const t = getCtx().currentTime;
+    [440,349,311,261].forEach((f,i) => {
+        shot(f,'sawtooth',t+i*0.28,0.38,0.15);
+        noise(t+i*0.28,0.1,0.05,false);
+    });
+    shot(261,'sawtooth',t+1.15,0.9,0.1,55);
+}
+function sfxLevelUp() {
+    const t = getCtx().currentTime;
+    const seq = [523,659,784,1047,1319,1047,1319,1568];
+    seq.forEach((f,i) => shot(f,'square',t+i*0.08,0.15,0.09));
+}
+function sfxFanfare() {
+    const t = getCtx().currentTime;
+    const mel = [[523,0],[659,0.1],[784,0.2],[1047,0.3],[784,0.52],[1047,0.66],[1319,0.82],[1568,1.0],[1319,1.22],[1047,1.37],[1319,1.52],[1568,1.72]];
+    mel.forEach(([f,dt]) => shot(f,'square',t+dt,0.22,0.1));
+    [[659,0],[784,0.1],[1047,0.3]].forEach(([f,dt]) => shot(f,'triangle',t+dt,0.16,0.06));
+}
+function sfxCreditsStart() {
+    const t = getCtx().currentTime;
+    shot(200,'sine',t,0.65,0.1,800);
+    shot(150,'triangle',t,0.85,0.07,600);
+}
+function sfxCoinShower() {
+    const t = getCtx().currentTime;
+    for (let i = 0; i < 14; i++)
+        shot(800+Math.random()*1400,'square',t+i*0.07,0.06,0.07);
+}
+function sfxType() {
+    if (!audioEnabled) return;
+    const t = getCtx().currentTime;
+    shot(600+Math.random()*220,'square',t,0.03,0.04);
+}
 
-        function createBackgroundMusic() {
-            if (!state.musicEnabled || backgroundMusicNodes.length > 0) return;
+/* ══════════════════════════════════════════════
+   BACKGROUND MUSIC
+   3-layer chiptune: lead (square) + bass (triangle) + arp (pulse)
+   + percussive hi-hat + kick synthesis
+   Loops indefinitely using JS scheduler
+══════════════════════════════════════════════ */
+const BPM  = 140;
+const BEAT = 60 / BPM;
+const BAR  = BEAT * 4;
 
-            // Resume audio context if suspended
-            if (audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
+// Frequency helpers
+const hz = (midi) => 440 * Math.pow(2, (midi - 69) / 12);
+// MIDI notes: C4=60, D4=62, E4=64, F4=65, G4=67, A4=69, B4=71
+const C3=hz(48),D3=hz(50),E3=hz(52),F3=hz(53),G3=hz(55),A3=hz(57),B3=hz(59),
+      C4=hz(60),D4=hz(62),E4=hz(64),F4=hz(65),G4=hz(67),A4=hz(69),B4=hz(71),
+      C5=hz(72),D5=hz(74),E5=hz(76),F5=hz(77),G5=hz(79),A5=hz(81),B5=hz(83),
+      C6=hz(84);
 
-            // Create a gain node for background music volume control
-            backgroundMusicGain = audioContext.createGain();
-            backgroundMusicGain.gain.setValueAtTime(0.15, audioContext.currentTime);
-            backgroundMusicGain.connect(audioContext.destination);
+// Lead melody — 8-bar pattern (beats as durations)
+const LEAD_SEQ = [
+    [C5,1],[E5,0.5],[G5,0.5],[E5,1],[C5,1],       // bar 1
+    [D5,1],[F5,0.5],[A5,0.5],[F5,1],[D5,1],         // bar 2
+    [E5,1],[G5,0.5],[B5,0.5],[G5,1],[E5,1],         // bar 3
+    [G5,2],[E5,1],[C5,1],                            // bar 4
+    [A5,0.5],[G5,0.5],[F5,0.5],[E5,0.5],[D5,1],[C5,1], // bar 5
+    [B4,0.5],[C5,0.5],[D5,0.5],[E5,0.5],[F5,1],[G5,1], // bar 6
+    [A5,1],[G5,0.5],[F5,0.5],[E5,1],[D5,1],          // bar 7
+    [C5,3],[C5,1],                                    // bar 8
+];
 
-            // Happy Birthday melody - normal tempo, energetic game style!
-            const melody = [
-                // "Happy Birthday to you" (first line)
-                { note: 523.25, duration: 0.3 },  // C5 - Hap-
-                { note: 523.25, duration: 0.2 },  // C5 - py
-                { note: 587.33, duration: 0.5 },  // D5 - Birth-
-                { note: 523.25, duration: 0.5 },  // C5 - day
-                { note: 698.46, duration: 0.5 },  // F5 - to
-                { note: 659.25, duration: 0.8 },  // E5 - you
-                
-                // "Happy Birthday to you" (second line)
-                { note: 523.25, duration: 0.3 },  // C5 - Hap-
-                { note: 523.25, duration: 0.2 },  // C5 - py
-                { note: 587.33, duration: 0.5 },  // D5 - Birth-
-                { note: 523.25, duration: 0.5 },  // C5 - day
-                { note: 783.99, duration: 0.5 },  // G5 - to
-                { note: 698.46, duration: 0.8 },  // F5 - you
-                
-                // Energetic game-style fill
-                { note: 880.00, duration: 0.15 }, // A5
-                { note: 783.99, duration: 0.15 }, // G5
-                { note: 659.25, duration: 0.15 }, // E5
-                
-                // "Happy Birthday dear [name]" (third line) - octave up for energy!
-                { note: 1046.5, duration: 0.3 },  // C6 - Hap-
-                { note: 1046.5, duration: 0.2 },  // C6 - py
-                { note: 1174.7, duration: 0.5 },  // D6 - Birth-
-                { note: 1046.5, duration: 0.5 },  // C6 - day
-                { note: 880.00, duration: 0.5 },  // A5 - dear
-                { note: 698.46, duration: 0.5 },  // F5 - Dad-
-                { note: 659.25, duration: 0.8 },  // E5 - dy
-                
-                // Power chord fill
-                { note: 783.99, duration: 0.15 }, // G5
-                { note: 880.00, duration: 0.15 }, // A5
-                { note: 1046.5, duration: 0.15 }, // C6
-                
-                // "Happy Birthday to you" (finale)
-                { note: 932.33, duration: 0.3 },  // A#5 - Hap-
-                { note: 932.33, duration: 0.2 },  // A#5 - py
-                { note: 880.00, duration: 0.5 },  // A5 - Birth-
-                { note: 698.46, duration: 0.5 },  // F5 - day
-                { note: 783.99, duration: 0.5 },  // G5 - to
-                { note: 698.46, duration: 0.6 },  // F5 - you
-                
-                // Victory ending - ascending celebration!
-                { note: 523.25, duration: 0.2 },  // C5
-                { note: 659.25, duration: 0.2 },  // E5
-                { note: 783.99, duration: 0.2 },  // G5
-                { note: 1046.5, duration: 0.6 }   // C6 - big finish!
-            ];
+// Bass — 8-bar root/fifth pulse
+const BASS_SEQ = [
+    [C3,0.5],[C3,0.5],[G3,0.5],[C3,0.5],
+    [F3,0.5],[F3,0.5],[C3,0.5],[G3,0.5],
+    [G3,0.5],[G3,0.5],[D3,0.5],[G3,0.5],
+    [C3,0.5],[G3,0.5],[E3,0.5],[C3,0.5],
+    [F3,0.5],[C3,0.5],[F3,0.5],[A3,0.5],
+    [G3,0.5],[D3,0.5],[G3,0.5],[B3,0.5],
+    [C3,0.5],[G3,0.5],[E3,0.5],[C3,0.5],
+    [C3,0.5],[C3,0.25],[G3,0.25],[C3,0.5],[C3,0.5],
+];
 
-            let currentTime = audioContext.currentTime;
-            
-            melody.forEach((note, index) => {
-                const osc = audioContext.createOscillator();
-                const noteGain = audioContext.createGain();
-                
-                // Use square wave for more retro game-like sound
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(note.note, currentTime);
-                
-                // Sharper envelope for more energetic feel
-                noteGain.gain.setValueAtTime(0, currentTime);
-                noteGain.gain.linearRampToValueAtTime(0.25, currentTime + 0.02);
-                noteGain.gain.linearRampToValueAtTime(0.18, currentTime + note.duration * 0.5);
-                noteGain.gain.linearRampToValueAtTime(0, currentTime + note.duration);
-                
-                osc.connect(noteGain);
-                noteGain.connect(backgroundMusicGain);
-                
-                osc.start(currentTime);
-                osc.stop(currentTime + note.duration);
-                
-                backgroundMusicNodes.push(osc);
-                
-                currentTime += note.duration;
+// Arp chords — one per bar
+const ARP = [
+    [C4,E4,G4],[F4,A4,C5],[G4,B4,D5],[C4,E4,G4],
+    [A3,C4,E4],[D4,F4,A4],[G3,B3,D4],[C4,E4,G4],
+];
+
+function bgmShot(freq, type, start, dur, vol) {
+    if (!bgmPlaying) return;
+    const ctx = getCtx();
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(vol, start + 0.008);
+    g.gain.setValueAtTime(vol, start + dur * 0.75);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(start); osc.stop(start + dur + 0.01);
+    bgmOscNodes.push(osc);
+}
+
+function scheduleBGMLoop(loopStart) {
+    if (!bgmPlaying) return;
+    const ctx = getCtx();
+
+    // ── Lead ──
+    let t = loopStart;
+    LEAD_SEQ.forEach(([f, beats]) => {
+        const dur = beats * BEAT;
+        bgmShot(f, 'square', t, dur * 0.82, 0.055);
+        t += dur;
+    });
+
+    // ── Bass ──
+    t = loopStart;
+    BASS_SEQ.forEach(([f, beats]) => {
+        const dur = beats * BEAT;
+        bgmShot(f, 'triangle', t, dur * 0.7, 0.07);
+        t += dur;
+    });
+
+    // ── Arp (triplet 16th sweep per beat) ──
+    ARP.forEach((chord, barIdx) => {
+        const bStart = loopStart + barIdx * BAR;
+        const step = BEAT / 3;
+        for (let beat = 0; beat < 4; beat++) {
+            chord.forEach((note, ni) => {
+                bgmShot(note, 'square', bStart + beat * BEAT + ni * step, step * 0.65, 0.022);
             });
-
-            // Calculate total duration and schedule next loop
-            const totalDuration = melody.reduce((sum, note) => sum + note.duration, 0);
-            
-            musicInterval = setTimeout(() => {
-                backgroundMusicNodes = [];
-                if (state.musicEnabled) {
-                    createBackgroundMusic();
-                }
-            }, totalDuration * 1000);
         }
+    });
 
-        function stopBackgroundMusic() {
-            backgroundMusicNodes.forEach(node => {
-                try {
-                    node.stop();
-                } catch (e) {
-                    // Node may already be stopped
-                }
-            });
-            backgroundMusicNodes = [];
-            
-            if (musicInterval) {
-                clearTimeout(musicInterval);
-                musicInterval = null;
-            }
-            
-            if (backgroundMusicGain) {
-                backgroundMusicGain.disconnect();
-                backgroundMusicGain = null;
-            }
-        }
+    // ── Hi-hat (noise, every half-beat) ──
+    for (let i = 0; i < 32; i++) {
+        const ht = loopStart + i * (BEAT / 2);
+        if (!bgmPlaying) break;
+        const n2 = Math.floor(ctx.sampleRate * 0.038);
+        const buf = ctx.createBuffer(1, n2, ctx.sampleRate);
+        const dd = buf.getChannelData(0);
+        for (let j = 0; j < n2; j++) dd[j] = Math.random() * 2 - 1;
+        const src = ctx.createBufferSource();
+        const flt = ctx.createBiquadFilter();
+        const gg  = ctx.createGain();
+        flt.type = 'highpass'; flt.frequency.value = 7000;
+        const hhVol = (i % 2 === 0) ? 0.035 : 0.018;
+        gg.gain.setValueAtTime(hhVol, ht);
+        gg.gain.exponentialRampToValueAtTime(0.0001, ht + 0.038);
+        src.buffer = buf;
+        src.connect(flt); flt.connect(gg); gg.connect(ctx.destination);
+        src.start(ht); src.stop(ht + 0.045);
+        bgmOscNodes.push(src);
+    }
 
-        function toggleMusic() {
-            state.musicEnabled = !state.musicEnabled;
-            playSound('click');
-            
-            if (state.musicEnabled) {
-                createBackgroundMusic();
-            } else {
-                stopBackgroundMusic();
-            }
-            
-            render();
-        }
+    // ── Kick (beats 1 & 3 of each bar) ──
+    for (let bar = 0; bar < 8; bar++) {
+        [0, 2].forEach(beat => {
+            if (!bgmPlaying) return;
+            const kt = loopStart + bar * BAR + beat * BEAT;
+            const ko = ctx.createOscillator();
+            const kg = ctx.createGain();
+            ko.frequency.setValueAtTime(160, kt);
+            ko.frequency.exponentialRampToValueAtTime(38, kt + 0.12);
+            kg.gain.setValueAtTime(0.28, kt);
+            kg.gain.exponentialRampToValueAtTime(0.0001, kt + 0.2);
+            ko.connect(kg); kg.connect(ctx.destination);
+            ko.start(kt); ko.stop(kt + 0.22);
+            bgmOscNodes.push(ko);
+        });
+    }
 
-        function playSound(type) {
-            if (!state.soundEnabled) return;
-            
-            // Resume audio context if it's suspended (due to browser autoplay policies)
-            if (audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
+    // ── Snare (beat 2 & 4 of bars 2,4,6,8) ──
+    [1,3,5,7].forEach(barIdx => {
+        [1,3].forEach(beat => {
+            if (!bgmPlaying) return;
+            const st2 = loopStart + barIdx * BAR + beat * BEAT;
+            const sn = Math.floor(ctx.sampleRate * 0.09);
+            const sbuf = ctx.createBuffer(1, sn, ctx.sampleRate);
+            const sd = sbuf.getChannelData(0);
+            for (let j = 0; j < sn; j++) sd[j] = Math.random() * 2 - 1;
+            const ssrc = ctx.createBufferSource();
+            const sflt = ctx.createBiquadFilter();
+            const sgg  = ctx.createGain();
+            sflt.type = 'bandpass'; sflt.frequency.value = 1800; sflt.Q.value = 0.4;
+            sgg.gain.setValueAtTime(0.07, st2);
+            sgg.gain.exponentialRampToValueAtTime(0.0001, st2 + 0.09);
+            ssrc.buffer = sbuf;
+            ssrc.connect(sflt); sflt.connect(sgg); sgg.connect(ctx.destination);
+            ssrc.start(st2); ssrc.stop(st2 + 0.1);
+            bgmOscNodes.push(ssrc);
+        });
+    });
 
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
+    // Schedule next loop
+    const loopLen = 8 * BAR;
+    const msUntil = (loopStart + loopLen - ctx.currentTime - 0.08) * 1000;
+    setTimeout(() => {
+        if (bgmPlaying) scheduleBGMLoop(loopStart + loopLen);
+    }, Math.max(0, msUntil));
+}
 
-            switch(type) {
-                case 'click':
-                    // Short beep for button clicks
-                    oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
-                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-                    oscillator.start(audioContext.currentTime);
-                    oscillator.stop(audioContext.currentTime + 0.1);
-                    break;
+function startBGM() {
+    if (!audioEnabled || bgmPlaying) return;
+    bgmPlaying = true;
+    scheduleBGMLoop(getCtx().currentTime + 0.1);
+}
+function stopBGM() {
+    bgmPlaying = false;
+    bgmOscNodes.forEach(n => { try { n.stop(); } catch(e){} });
+    bgmOscNodes = [];
+}
 
-                case 'correct':
-                    // Cheerful ascending notes
-                    oscillator.frequency.setValueAtTime(523, audioContext.currentTime); // C5
-                    oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.1); // E5
-                    oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.2); // G5
-                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
-                    oscillator.start(audioContext.currentTime);
-                    oscillator.stop(audioContext.currentTime + 0.4);
-                    break;
+/* ══════════════════════════════════════════════
+   BIRTHDAY BGM  —  Happy Birthday chiptune
+   Warmer waltz (3/4), triangle lead + sine harmony
+══════════════════════════════════════════════ */
+const BD_BPM  = 96;
+const BD_BEAT = 60 / BD_BPM;
+const BD_BAR  = BD_BEAT * 3;
 
-                case 'wrong':
-                    // Descending notes for wrong answer
-                    oscillator.type = 'square';
-                    oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
-                    oscillator.frequency.setValueAtTime(300, audioContext.currentTime + 0.1);
-                    oscillator.frequency.setValueAtTime(200, audioContext.currentTime + 0.2);
-                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                    oscillator.start(audioContext.currentTime);
-                    oscillator.stop(audioContext.currentTime + 0.3);
-                    break;
+const BD_LEAD = [
+    [G4,0.75],[G4,0.25],[A4,1],[G4,1],[C5,1],[B4,2],
+    [G4,0.75],[G4,0.25],[A4,1],[G4,1],[D5,1],[C5,2],
+    [G4,0.75],[G4,0.25],[G5,1],[E5,1],[C5,1],[B4,1],[A4,2],
+    [F5,0.75],[F5,0.25],[E5,1],[C5,1],[D5,1],[C5,2],
+];
+const BD_HARM = [
+    [E4,0.75],[E4,0.25],[F4,1],[E4,1],[A4,1],[G4,2],
+    [E4,0.75],[E4,0.25],[F4,1],[E4,1],[B4,1],[A4,2],
+    [E4,0.75],[E4,0.25],[E5,1],[C5,1],[A4,1],[G4,1],[F4,2],
+    [D5,0.75],[D5,0.25],[C5,1],[A4,1],[B4,1],[A4,2],
+];
+const BD_BASS_ROOTS = [C3,C3,G3,C3, C3,C3,G3,C3, C3,C3,G3,C3, F3,C3,G3,C3];
+const BD_BELLS = [
+    [C4,E4,G4],[C4,E4,G4],[G3,B3,D4],[C4,E4,G4],
+    [C4,E4,G4],[C4,E4,G4],[G3,B3,D4],[C4,E4,G4],
+    [C4,E4,G4],[C4,E4,G4],[G3,B3,D4],[C4,E4,G4],
+    [F3,A3,C4],[C4,E4,G4],[G3,B3,D4],[C4,E4,G4],
+];
 
-                case 'heartLoss':
-                    // Heart breaking sound
-                    oscillator.type = 'sawtooth';
-                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                    oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.3);
-                    gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                    oscillator.start(audioContext.currentTime);
-                    oscillator.stop(audioContext.currentTime + 0.3);
-                    break;
+let bdPlaying = false;
+let bdNodes = [];
 
-                case 'success':
-                    // Victory fanfare
-                    const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
-                    notes.forEach((freq, i) => {
-                        const osc = audioContext.createOscillator();
-                        const gain = audioContext.createGain();
-                        osc.connect(gain);
-                        gain.connect(audioContext.destination);
-                        osc.frequency.setValueAtTime(freq, audioContext.currentTime + i * 0.15);
-                        gain.gain.setValueAtTime(0.2, audioContext.currentTime + i * 0.15);
-                        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + i * 0.15 + 0.3);
-                        osc.start(audioContext.currentTime + i * 0.15);
-                        osc.stop(audioContext.currentTime + i * 0.15 + 0.3);
-                    });
-                    return; // Skip the default oscillator cleanup
+function bdShot(freq, type, start, dur, vol) {
+    if (!bdPlaying) return;
+    const ctx = getCtx();
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(vol, start + 0.01);
+    g.gain.setValueAtTime(vol, start + dur * 0.8);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(start); osc.stop(start + dur + 0.02);
+    bdNodes.push(osc);
+}
 
-                case 'fail':
-                    // Game over sound
-                    oscillator.type = 'sawtooth';
-                    oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
-                    oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 1);
-                    gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
-                    oscillator.start(audioContext.currentTime);
-                    oscillator.stop(audioContext.currentTime + 1);
-                    break;
+function scheduleBDLoop(loopStart) {
+    if (!bdPlaying) return;
+    const ctx = getCtx();
+    const totalBars = 16;
+    let t = loopStart;
+    BD_LEAD.forEach(([f, beats]) => { const dur = beats * BD_BEAT; bdShot(f,'triangle',t,dur*0.88,0.09); t+=dur; });
+    t = loopStart;
+    BD_HARM.forEach(([f, beats]) => { const dur = beats * BD_BEAT; bdShot(f,'sine',t,dur*0.85,0.05); t+=dur; });
+    for (let bar=0; bar<totalBars; bar++)
+        bdShot(BD_BASS_ROOTS[bar % BD_BASS_ROOTS.length],'triangle',loopStart+bar*BD_BAR,BD_BAR*0.7,0.07);
+    BD_BELLS.forEach((chord,barIdx) => {
+        const bStart = loopStart + barIdx * BD_BAR;
+        chord.forEach((note,ni) => bdShot(note,'square',bStart+ni*BD_BEAT,BD_BEAT*0.55,0.018));
+    });
+    for (let bar=0; bar<totalBars; bar++) {
+        if (!bdPlaying) break;
+        const kt = loopStart + bar * BD_BAR;
+        const ko = ctx.createOscillator(); const kg = ctx.createGain();
+        ko.frequency.setValueAtTime(120,kt); ko.frequency.exponentialRampToValueAtTime(35,kt+0.1);
+        kg.gain.setValueAtTime(0.18,kt); kg.gain.exponentialRampToValueAtTime(0.0001,kt+0.18);
+        ko.connect(kg); kg.connect(ctx.destination); ko.start(kt); ko.stop(kt+0.2);
+        bdNodes.push(ko);
+    }
+    for (let bar=0; bar<totalBars; bar++)
+        [1,2].forEach(beat => { if(bdPlaying) bdShot(hz(81+beat*2),'sine',loopStart+bar*BD_BAR+beat*BD_BEAT,0.08,0.025); });
 
-                case 'hover':
-                    // Subtle hover sound
-                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
-                    oscillator.start(audioContext.currentTime);
-                    oscillator.stop(audioContext.currentTime + 0.05);
-                    break;
+    const loopLen = totalBars * BD_BAR;
+    const msUntil = (loopStart + loopLen - ctx.currentTime - 0.08) * 1000;
+    setTimeout(() => { if (bdPlaying) scheduleBDLoop(loopStart + loopLen); }, Math.max(0, msUntil));
+}
 
-                case 'celebration':
-                    // Celebration sound with multiple tones
-                    for (let i = 0; i < 5; i++) {
-                        setTimeout(() => {
-                            const osc = audioContext.createOscillator();
-                            const gain = audioContext.createGain();
-                            osc.connect(gain);
-                            gain.connect(audioContext.destination);
-                            osc.frequency.setValueAtTime(400 + Math.random() * 600, audioContext.currentTime);
-                            gain.gain.setValueAtTime(0.2, audioContext.currentTime);
-                            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-                            osc.start(audioContext.currentTime);
-                            osc.stop(audioContext.currentTime + 0.2);
-                        }, i * 100);
-                    }
-                    return;
+function startBirthdayBGM() {
+    if (!audioEnabled) return;
+    stopBGM();
+    bdPlaying = false;
+    bdNodes.forEach(n => { try { n.stop(); } catch(e){} });
+    bdNodes = [];
+    bdPlaying = true;
+    scheduleBDLoop(getCtx().currentTime + 0.15);
+}
 
-                case 'money':
-                    // Cash register sound
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
-                    oscillator.frequency.setValueAtTime(1200, audioContext.currentTime + 0.05);
-                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-                    oscillator.start(audioContext.currentTime);
-                    oscillator.stop(audioContext.currentTime + 0.2);
-                    break;
-            }
-        }
+function toggleAudio() {
+    const btn = document.getElementById('audio-toggle');
+    if (!audioEnabled) {
+        audioEnabled = true;
+        getCtx().resume();
+        btn.textContent = '♪ BGM: ON';
+        btn.classList.add('on');
+        startBGM();
+        setTimeout(() => sfxLevelUp(), 80);
+    } else {
+        audioEnabled = false;
+        stopBGM();
+        btn.textContent = '♪ BGM: OFF';
+        btn.classList.remove('on');
+    }
+}
 
-        function toggleSound() {
-            state.soundEnabled = !state.soundEnabled;
-            playSound('click');
-            render();
-        }
+/* Auto-start BGM on first user interaction (browsers require gesture) */
+function autoStartAudio() {
+    if (audioEnabled) return;
+    audioEnabled = true;
+    getCtx().resume();
+    startBGM();
+    const btn = document.getElementById('audio-toggle');
+    if (btn) { btn.textContent = '♪ BGM: ON'; btn.classList.add('on'); }
+    document.removeEventListener('click', autoStartAudio);
+    document.removeEventListener('keydown', autoStartAudio);
+    document.removeEventListener('touchstart', autoStartAudio);
+}
+document.addEventListener('click', autoStartAudio);
+document.addEventListener('keydown', autoStartAudio);
+document.addEventListener('touchstart', autoStartAudio);
 
-        function initFloatingEmojis() {
-            const emojis = [];
-            const emojiList = ['🎂', '🎉', '🎁', '🎈', '🎊', '🍰', '🥳'];
-            
-            for (let i = 0; i < 25; i++) {
-                let left, top;
-                let attempts = 0;
-                const maxAttempts = 50;
-                
-                do {
-                    left = Math.random() * 100;
-                    top = Math.random() * 100;
-                    attempts++;
-                    
-                    const isInHUDZone = (left > 70 && top < 15);
-                    
-                    if (!isInHUDZone || attempts >= maxAttempts) {
-                        break;
-                    }
-                } while (attempts < maxAttempts);
-                
-                emojis.push({
-                    id: i,
-                    emoji: emojiList[Math.floor(Math.random() * emojiList.length)],
-                    left: left,
-                    top: top,
-                    delay: Math.random() * 5,
-                    duration: 15 + Math.random() * 10,
-                    size: 20 + Math.random() * 40
-                });
-            }
-            state.floatingEmojis = emojis;
-        }
+/* ══════════════════════════
+   GAME STATE
+══════════════════════════ */
+const CORRECT_ANSWERS = {
+    0:'0820', 1:'피스타치오', 2:'2016', 3:'LG',
+    4:'예민함', 5:'맥주', 6:'승아', 7:'한숨',
+    8:'건강', 9:'사랑합니다'
+};
+const MESSAGE_DURATION = 15000;
+const TOTAL_Q = 10;
 
-        function renderFloatingEmojis() {
-            return state.floatingEmojis.map(function(item) {
-                return '<div class="absolute opacity-20 animate-float" style="left: ' + item.left + '%; top: ' + item.top + '%; animation-delay: ' + item.delay + 's; animation-duration: ' + item.duration + 's; font-size: ' + item.size + 'px;">' + item.emoji + '</div>';
-            }).join('');
-        }
+let state = {
+    screen:'landing', hearts:10,
+    hoverText:false, showButtons:false,
+    noButtonPos:{x:0,y:0}, yesButtonScale:1,
+    floatingEmojis:[],
+    currentQuestion:0, q0Answer:'',
+    showCongratsButton:false,
+    showMessage:false, creditsFinished:false,
+    showGiftMessage:false, showGiftDetails:false
+};
 
-        function renderHearts() {
-            var hearts = '';
-            for (var i = 0; i < state.hearts; i++) {
-                hearts += '<div>💙</div>';
-            }
-            return '<div class="hearts-hud">' + hearts + '</div>';
-        }
+function initFloatingEmojis() {
+    const list = ['🎂','🎉','🎁','🎈','🎊','🍰','🥳','⭐','🌟'];
+    state.floatingEmojis = Array.from({length:18},(_,i)=>({
+        id:i, emoji:list[Math.floor(Math.random()*list.length)],
+        left:Math.random()*90, delay:Math.random()*8, duration:14+Math.random()*12
+    }));
+}
+function renderFloats() {
+    return state.floatingEmojis.map(f=>
+        `<div class="float-emoji" style="left:${f.left}%;bottom:0;animation-delay:${f.delay}s;animation-duration:${f.duration}s;">${f.emoji}</div>`
+    ).join('');
+}
+function renderHUD() {
+    let h = '<div class="hearts-hud"><div class="hud-label">LIFE</div>';
+    for (let i=0;i<10;i++)
+        h+=`<div style="opacity:${i<state.hearts?1:0.15};${i<state.hearts?'filter:drop-shadow(0 0 4px #ff2244)':''}">${i<state.hearts?'♥':'♡'}</div>`;
+    return h+'</div>';
+}
+function mkMarquee(txt) {
+    return `<div class="marquee-wrap"><div class="marquee-inner">${txt}</div></div>`;
+}
+function renderDots(cur) {
+    let d='<div class="pixel-dots">';
+    for(let i=0;i<TOTAL_Q;i++) d+=`<div class="pixel-dot ${i<cur?'active':''}"></div>`;
+    return d+'</div>';
+}
 
-        function renderSoundToggle() {
-            return '<div class="sound-toggle" onclick="toggleSound()" title="' + (state.soundEnabled ? '소리 끄기' : '소리 켜기') + '">' + (state.soundEnabled ? '🔊' : '🔇') + '</div>' + 
-                   '<div class="sound-toggle" onclick="toggleMusic()" style="top: 80px;" title="' + (state.musicEnabled ? '음악 끄기' : '음악 켜기') + '">' + (state.musicEnabled ? '🎵' : '🎶') + '</div>';
-        }
+/* ─ SCREENS ─ */
+function renderLanding() {
+    return `
+    <div class="screen" style="position:relative;overflow:hidden;">
+        ${renderFloats()}${renderHUD()}
+        <div class="container text-center" style="position:relative;z-index:5;">
+            ${mkMarquee('★ BIRTHDAY GAME ★ 아빠의 도전 ★ PRESS START ★ 생일 축하 ★ HAPPY BIRTHDAY ★')}
+            <div style="margin:48px 0 40px;">
+                <div class="pixel-sm" style="color:var(--dim);font-size:15px;letter-spacing:4px;margin-bottom:16px;">INSERT COIN</div>
+                <h1 class="pixel glitch-wrap" data-text="${state.hoverText?'게임을 시작합니다':'아빠 안녕하세요'}"
+                    style="font-size:clamp(16px,3.5vw,28px);color:var(--cyan);text-shadow:var(--glow-cyan);cursor:pointer;display:inline-block;"
+                    onmouseenter="onHoverTitle()">
+                    ${state.hoverText?'게임을 시작합니다':'아빠 안녕하세요'}
+                </h1>
+                <div class="blink" style="color:var(--dim);font-size:16px;margin-top:12px;letter-spacing:3px;">▼ HOVER TO START ▼</div>
+            </div>
+            ${state.showButtons?`
+            <div style="display:flex;gap:20px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:32px;">
+                <button class="btn btn-green" onclick="handleYesClick()" onmouseenter="sfxCoin()"
+                    style="transform:scale(${state.yesButtonScale});transition:transform 0.3s;">[ 네! 🎉 ]</button>
+                <button class="btn btn-magenta"
+                    onmouseenter="handleNoProximity(event)" onclick="handleNoClick()"
+                    style="position:${state.noButtonPos.x?'fixed':'relative'};left:${state.noButtonPos.x?state.noButtonPos.x+'px':'auto'};top:${state.noButtonPos.y?state.noButtonPos.y+'px':'auto'};transition:left 0.25s,top 0.25s;">
+                    [ 아니요 😢 ]</button>
+            </div>`:''}
+            <div style="margin-top:48px;">
+                <div class="stat-row"><span class="stat-label">STAGE</span><span class="stat-val">01 / 10</span></div>
+                <div class="stat-row"><span class="stat-label">DIFFICULTY</span><span class="stat-val">FAMILY</span></div>
+                <div class="stat-row"><span class="stat-label">PLAYER</span><span class="stat-val">아빠</span></div>
+            </div>
+            <div class="pixel-xs" style="margin-top:24px;color:var(--dim);font-size:13px;letter-spacing:2px;">
+                © 2025 BIRTHDAY GAMES INC. ALL RIGHTS RESERVED
+            </div>
+        </div>
+    </div>`;
+}
 
-        function handleNoProximity(e) {
-            if (state.hearts <= 0) return;
-            
-            playSound('hover');
-            
-            const button = e.target;
-            const rect = button.getBoundingClientRect();
-            const maxX = window.innerWidth - rect.width - 20;
-            const maxY = window.innerHeight - rect.height - 20;
-            
-            state.noButtonPos = {
-                x: Math.random() * maxX,
-                y: Math.random() * maxY
-            };
-            state.yesButtonScale += 0.25;
-            state.hearts = Math.max(0, state.hearts - 1);
-            
-            playSound('heartLoss');
-            
-            if (state.hearts === 0) {
-                setTimeout(() => {
-                    state.screen = 'fail';
-                    playSound('fail');
-                    render();
-                }, 300);
-            } else {
-                render();
-            }
-        }
+function renderGame() {
+    const q = state.currentQuestion;
+    const pct = (q/TOTAL_Q)*100;
+    let qContent = '';
+    if (state.showCongratsButton) {
+        qContent=`<div style="text-align:center;padding:32px 0;">
+            <div style="color:var(--green);font-family:'Press Start 2P',monospace;font-size:14px;text-shadow:var(--glow-green);margin-bottom:16px;">STAGE CLEAR!</div>
+            <div style="color:var(--yellow);font-size:28px;margin-bottom:8px;">★ ALL STAGES COMPLETE ★</div>
+            <div style="color:var(--white);font-size:22px;margin-bottom:32px;">모든 문제를 통과했습니다 🎉</div>
+            <div style="color:var(--dim);font-size:18px;margin-bottom:32px;">비밀 메시지가 잠금 해제되었습니다...</div>
+            <button class="btn btn-yellow" onclick="doShowMsg()" onmouseenter="sfxCoin()">▶ 메시지 읽기 💌</button>
+        </div>`;
+    } else {
+        const QS = [
+            {label:'Q.01',icon:'🎂',text:'딸 생일은? (MMDD)'},
+            {label:'Q.02',icon:'🍦',text:'엄마가 제일 좋아하는 아이스크림 맛은?',choices:['딸기','피스타치오','초코']},
+            {label:'Q.03',icon:'🎓',text:'딸 대학 입학 년도는?',choices:['2016년','2017년','2018년'],vals:['2016','2017','2018']},
+            {label:'Q.04',icon:'📱',text:'아빠가 딸에게 사준 첫 스마트폰 브랜드는?',choices:['삼성','애플','LG']},
+            {label:'Q.05',icon:'😅',text:'엄마가 아빠 닮아서 싫어하는 점은?',choices:['키','예민함','음악적 재능']},
+            {label:'Q.06',icon:'🍺',text:'딸이 가장 좋아하는 술 종류는?',choices:['소주','맥주','와인']},
+            {label:'Q.07',icon:'😤',text:'우리 가족에서 제일 고집 센 사람은?',choices:['엄마','아빠','승아']},
+            {label:'Q.08',icon:'😠',text:'엄마가 화나면 하는 행동은?',choices:['인상 찌푸르기','한숨','노려보기']},
+            {label:'Q.09',icon:'💝',text:'엄마가 아빠에게 가장 바라는 건?',choices:['올해 억대 벌기','크루즈 여행','건강']},
+            {label:'Q.10',icon:'💙',text:'딸이 아빠에게 가장 하고 싶은 말은?',choices:['수고하셨습니다','감사합니다','사랑합니다']},
+        ];
+        const curr = QS[q];
+        const vals = curr.vals || curr.choices;
+        qContent=`
+        <div style="margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span class="q-counter">STAGE <span>${curr.label}</span></span>
+                <span class="q-counter">HEARTS: <span style="color:var(--red);">${'♥'.repeat(state.hearts)}</span></span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+            ${renderDots(q)}
+        </div>
+        <div style="border:1px solid var(--border);padding:20px 24px;margin-bottom:20px;background:rgba(0,245,255,0.02);">
+            <div class="pixel-xs" style="font-size:13px;color:var(--dim);letter-spacing:2px;margin-bottom:10px;">QUESTION ${q+1} OF ${TOTAL_Q}</div>
+            <div style="font-size:26px;color:var(--white);line-height:1.5;">${curr.icon} ${curr.text}</div>
+        </div>
+        ${q===0?`
+        <div style="display:flex;flex-direction:column;gap:12px;">
+            <input type="text" maxlength="4" id="q0-input" value="${state.q0Answer}"
+                placeholder="MMDD" class="retro-input" oninput="sfxType()" />
+            <button class="btn btn-full" onclick="submitQ0()" onmouseenter="sfxCoin()">[ 제출 SUBMIT ]</button>
+        </div>`:`
+        <div style="display:flex;flex-direction:column;gap:8px;">
+            ${vals.map((v,i)=>`
+            <button class="choice-btn" onclick="handleAnswer(${q},'${v}')" onmouseenter="sfxHover()">
+                ${['A','B','C'][i]}. ${curr.choices[i]}
+            </button>`).join('')}
+        </div>`}`;
+    }
+    return `
+    <div class="screen" style="position:relative;overflow:hidden;">
+        ${renderFloats()}${renderHUD()}
+        <div class="container" style="position:relative;z-index:5;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+                <div class="pixel" style="font-size:13px;color:var(--cyan);text-shadow:var(--glow-cyan);">★ BIRTHDAY QUIZ</div>
+                <div class="pixel-xs" style="color:var(--dim);">아빠의 도전</div>
+            </div>
+            <div class="panel bracketed" style="padding:28px;">
+                <div class="bracket-bl"></div><div class="bracket-br"></div>
+                ${qContent}
+            </div>
+        </div>
+    </div>`;
+}
 
-        function handleNoClick() {
-            playSound('wrong');
-            alert("오류: 다시 생각해보세요!");
-        }
+function renderFail() {
+    return `
+    <div class="fail-screen" style="position:relative;">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,0,0,0.04) 3px,rgba(255,0,0,0.04) 6px);pointer-events:none;"></div>
+        <div class="pixel shake" style="font-size:clamp(14px,4vw,32px);color:var(--red);text-shadow:0 0 12px var(--red),0 0 40px rgba(255,0,0,0.6);">GAME OVER</div>
+        <div style="color:var(--red);font-size:28px;opacity:0.7;">실패입니다.</div>
+        <div style="color:var(--dim);font-size:16px;letter-spacing:3px;">TRY AGAIN?</div>
+        <button class="btn btn-magenta" onclick="location.reload()" onmouseenter="sfxCoin()">[ 다시시작 ↺ ]</button>
+    </div>`;
+}
 
-        function handleYesClick() {
-            playSound('celebration');
-            state.screen = 'game';
-            state.showConfetti = true;
-            render();
-            
-            setTimeout(function() {
-                state.showConfetti = false;
-                render();
-            }, 3000);
-        }
+function renderSuccess() {
+    if (state.showMessage && !state.creditsFinished) {
+        return `
+        <div style="min-height:100vh;overflow:hidden;position:relative;background:var(--bg);">
+            <div class="credits-roll" style="animation-duration:${MESSAGE_DURATION/1000}s;padding:60px 0;">
+                <div style="text-align:center;max-width:700px;margin:0 auto;padding:0 32px;">
+                    ${[
+                        ['세상에 하나 밖에 없는','우리 아빠에게'],
+                        ['항상 우리 가족을 위해','열심히 일하시는','아빠!'],
+                        ['이 사이트도 만들 수 있던 건','다양성을 존중해주고','새로운 도전에 겁이 없는'],
+                        ['멋진 아빠를 보고','매일 매일 보고 배운 덕분!'],
+                        ['아빠의 유머스러운 농담부터','흰머리까지','저에게 큰 힘이 됩니다'],
+                        ['언제나 건강하시고','행복하시길 바랍니다'],
+                        ['생신 축하드려요!'],['사랑합니다 아빠'],['🎂🎉🎁🎈🎊💙'],
+                    ].map(lines=>`<div style="margin-bottom:80px;">${lines.map(l=>`<div style="font-family:'VT323',monospace;font-size:clamp(28px,5vw,48px);color:var(--cyan);text-shadow:var(--glow-cyan);line-height:1.6;margin-bottom:4px;">${l}</div>`).join('')}</div>`).join('')}
+                    <div style="height:120px;"></div>
+                </div>
+            </div>
+        </div>`;
+    }
+    if (state.creditsFinished && !state.showGiftMessage) {
+        return `<div class="screen" style="position:relative;overflow:hidden;">${renderFloats()}
+        <div class="container text-center" style="position:relative;z-index:5;">
+            <div class="pixel" style="font-size:12px;color:var(--green);text-shadow:var(--glow-green);margin-bottom:20px;">BONUS STAGE UNLOCKED</div>
+            <div style="font-size:32px;color:var(--yellow);margin-bottom:32px;">작은 선물이 있습니다 🎁</div>
+            <button class="btn btn-yellow" onclick="doShowGiftMsg()" onmouseenter="sfxCoin()">[ 선물 확인하기 💝 ]</button>
+        </div></div>`;
+    }
+    if (state.showGiftMessage && !state.showGiftDetails) {
+        return `<div class="screen" style="position:relative;overflow:hidden;">${renderFloats()}
+        <div class="container text-center" style="position:relative;z-index:5;">
+            <div class="pixel" style="font-size:11px;color:var(--yellow);text-shadow:var(--glow-yellow);margin-bottom:16px;">★ SPECIAL GIFT ★</div>
+            <div style="font-size:30px;color:var(--white);margin-bottom:32px;">준비했습니다! 🎉</div>
+            <button class="btn" onclick="doShowGiftDetails()" onmouseenter="sfxCoin()">[ 계속 ▶ ]</button>
+        </div></div>`;
+    }
+    if (state.showGiftDetails) {
+        let rain='';
+        for(let i=0;i<24;i++) rain+=`<div class="money-fall" style="left:${Math.random()*96}%;animation-delay:${Math.random()*5}s;animation-duration:${3+Math.random()*4}s;">💵</div>`;
+        return `<div class="screen" style="position:relative;overflow:hidden;">
+        <div style="position:absolute;inset:0;pointer-events:none;z-index:2;">${rain}</div>
+        <div class="container" style="position:relative;z-index:10;">
+            <div class="panel bracketed" style="padding:40px;text-align:center;">
+                <div class="bracket-bl"></div><div class="bracket-br"></div>
+                <div class="pixel" style="font-size:10px;color:var(--yellow);text-shadow:var(--glow-yellow);margin-bottom:20px;">생일 선물 🎁</div>
+                <div class="gift-amount">💰 100,000원 💰</div>
+                <div style="margin:28px 0;height:1px;background:linear-gradient(90deg,transparent,var(--yellow),transparent);"></div>
+                <div style="font-size:20px;color:var(--white);line-height:1.7;margin-bottom:20px;">
+                    주의: 아빠만을 위한 선물을 사세요!<br>
+                    아빠 외 가족이나 타인을 위한 거에 쓰면<br>
+                    <span style="color:var(--red);">소멸됩니다!</span>
+                </div>
+                <div style="font-size:24px;color:var(--cyan);text-shadow:var(--glow-cyan);">사랑합니다 아빠! ❤️</div>
+            </div>
+        </div></div>`;
+    }
+    return '';
+}
 
-        function handleAnswer(questionNum, answer) {
-            const correct = CORRECT_ANSWERS[questionNum];
-            
-            if (answer === correct) {
-                playSound('correct');
-                if (questionNum === 9) {
-                    state.showCongratsButton = true;
-                } else {
-                    state.currentQuestion = questionNum + 1;
-                }
-                render();
-            } else {
-                playSound('wrong');
-                state.hearts = Math.max(0, state.hearts - 1);
-                
-                if (state.hearts > 0) {
-                    playSound('heartLoss');
-                }
-                
-                if (state.hearts === 0) {
-                    setTimeout(function() {
-                        state.screen = 'fail';
-                        playSound('fail');
-                        render();
-                    }, 300);
-                } else {
-                    render();
-                }
-            }
-        }
-
-        function handleTitleHover() {
-            playSound('hover');
-            state.hoverText = true;
-            state.showButtons = true;
-            render();
-        }
-
-        function submitQ0() {
-            playSound('click');
-            handleAnswer(0, state.q0Answer);
-        }
-
-        function showMessage() {
-            playSound('success');
-            state.screen = 'success';
-            state.showMessage = true;
-            render();
-            
-            setTimeout(function() {
-                state.creditsFinished = true;
-                render();
-            }, MESSAGE_DURATION);
-        }
-
-        function showGiftMessage() {
-            playSound('celebration');
-            state.showGiftMessage = true;
-            render();
-        }
-
-        function showGiftDetails() {
-            playSound('money');
-            state.showGiftDetails = true;
-            render();
-        }
-
-        function renderLandingScreen() {
-            var html = '<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center relative overflow-hidden">';
-            html += renderFloatingEmojis();
-            html += renderHearts();
-            html += renderSoundToggle();
-            html += '<div class="text-center z-10 px-4">';
-            html += '<h1 class="text-6xl font-bold text-blue-600 mb-12 cursor-pointer transition-all duration-300" onmouseenter="handleTitleHover()">';
-            html += state.hoverText ? '게임을 시작합니다' : '아빠 안녕하세요';
-            html += '</h1>';
-            
-            if (state.showButtons) {
-                html += '<div class="flex gap-6 justify-center items-center">';
-                html += '<button onclick="handleYesClick()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold text-2xl px-12 py-6 rounded-full shadow-lg transition-all duration-200 hover:shadow-2xl z-20" style="transform: scale(' + state.yesButtonScale + ');">네! 🎉</button>';
-                html += '<button onmouseenter="handleNoProximity(event)" onclick="handleNoClick()" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold text-2xl px-12 py-6 rounded-full shadow-lg transition-all duration-200 z-20" style="position: ' + (state.noButtonPos.x || state.noButtonPos.y ? 'fixed' : 'relative') + '; left: ' + (state.noButtonPos.x ? state.noButtonPos.x + 'px' : 'auto') + '; top: ' + (state.noButtonPos.y ? state.noButtonPos.y + 'px' : 'auto') + '; transition: left 0.3s ease, top 0.3s ease;">아니요 😢</button>';
-                html += '</div>';
-            }
-            
-            html += '</div></div>';
-            return html;
-        }
-
-        function renderGameScreen() {
-            var html = '<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-8 relative overflow-hidden flex items-center justify-center">';
-            html += renderFloatingEmojis();
-            html += renderSoundToggle();
-            
-            if (state.showConfetti) {
-                html += '<div class="absolute inset-0 pointer-events-none z-50">';
-                for (var i = 0; i < 80; i++) {
-                    var emojis = ['🎂', '🎉', '🎁', '🎈', '🎊'];
-                    html += '<div class="absolute animate-bounce" style="left: ' + (Math.random() * 100) + '%; top: -' + (Math.random() * 20) + '%; animation-delay: ' + (Math.random() * 2) + 's; animation-duration: ' + (2 + Math.random() * 3) + 's; font-size: ' + (15 + Math.random() * 15) + 'px;">' + emojis[Math.floor(Math.random() * 5)] + '</div>';
-                }
-                html += '</div>';
-            }
-
-            html += renderHearts();
-            html += '<div class="max-w-2xl mx-auto bg-white/80 backdrop-blur rounded-3xl shadow-xl p-8 relative z-10">';
-            
-            if (state.showCongratsButton) {
-                html += '<div class="text-center space-y-8">';
-                html += '<h1 class="text-4xl font-bold text-blue-600">축하합니다! 모든 문제를 통과했습니다. 🎉</h1>';
-                html += '<p class="text-2xl text-gray-700">메시지가 있습니다...</p>';
-                html += '<button onclick="showMessage()" class="bg-blue-500 text-white px-12 py-6 rounded-full text-2xl font-bold hover:bg-blue-600 shadow-2xl animate-bounce">메시지 읽기 💌</button>';
-                html += '</div>';
-            } else {
-                html += '<h1 class="text-4xl font-bold text-blue-600 text-center mb-8">생일 퀴즈 게임</h1>';
-                html += '<div class="space-y-8">';
-                
-                if (state.currentQuestion === 0) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🎂 딸 생일은?</p>';
-                    html += '<input type="text" maxlength="4" id="q0-input" value="' + state.q0Answer + '" placeholder="XXXX" class="w-full px-6 py-4 text-2xl border-2 border-blue-300 rounded-xl focus:border-blue-500 focus:outline-none text-center" />';
-                    html += '<button onclick="submitQ0()" class="w-full bg-blue-500 text-white py-4 rounded-xl text-xl font-bold hover:bg-blue-600 transition">제출</button></div>';
-                } else if (state.currentQuestion === 1) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🍦 엄마가 제일 좋아하는 아이스크림 맛은?</p>';
-                    html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(1, \'딸기\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">딸기</button>';
-                    html += '<button onclick="handleAnswer(1, \'피스타치오\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">피스타치오</button>';
-                    html += '<button onclick="handleAnswer(1, \'초코\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">초코</button>';
-                    html += '</div></div>';
-                } else if (state.currentQuestion === 2) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🎓 딸 대학 입학 년도는?</p>';
-                    html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(2, \'2016\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">2016년</button>';
-                    html += '<button onclick="handleAnswer(2, \'2017\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">2017년</button>';
-                    html += '<button onclick="handleAnswer(2, \'2018\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">2018년</button>';
-                    html += '</div></div>';
-                } else if (state.currentQuestion === 3) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">📱 아빠가 딸에게 사준 첫 스마트폰 브랜드는?</p>';
-                    html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(3, \'삼성\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">삼성</button>';
-                    html += '<button onclick="handleAnswer(3, \'애플\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">애플</button>';
-                    html += '<button onclick="handleAnswer(3, \'LG\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">LG</button>';
-                    html += '</div></div>';
-                } else if (state.currentQuestion === 4) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">😅 엄마가 아빠 닮아서 싫어하는 점은?</p>';
-                    html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(4, \'키\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">키</button>';
-                    html += '<button onclick="handleAnswer(4, \'예민함\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">예민함</button>';
-                    html += '<button onclick="handleAnswer(4, \'음악적 재능\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">음악적 재능</button>';
-                    html += '</div></div>';
-                } else if (state.currentQuestion === 5) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">🍺 딸이 가장 좋아하는 술 종류는?</p>';
-                    html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(5, \'소주\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">소주</button>';
-                    html += '<button onclick="handleAnswer(5, \'맥주\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">맥주</button>';
-                    html += '<button onclick="handleAnswer(5, \'와인\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">와인</button>';
-                    html += '</div></div>';
-                } else if (state.currentQuestion === 6) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">😤 우리 가족에서 제일 고집 센 사람은?</p>';
-                    html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(6, \'엄마\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">엄마</button>';
-                    html += '<button onclick="handleAnswer(6, \'아빠\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">아빠</button>';
-                    html += '<button onclick="handleAnswer(6, \'승아\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">승아</button>';
-                    html += '</div></div>';
-                } else if (state.currentQuestion === 7) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">😠 엄마가 화나면 하는 행동은?</p>';
-                    html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(7, \'인상 찌푸르기\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">인상 찌푸르기</button>';
-                    html += '<button onclick="handleAnswer(7, \'한숨\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">한숨</button>';
-                    html += '<button onclick="handleAnswer(7, \'노려보기\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">노려보기</button>';
-                    html += '</div></div>';
-                } else if (state.currentQuestion === 8) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">💝 엄마가 아빠에게 가장 바라는 건?</p>';
-                    html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(8, \'올해 억대 벌기\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">올해 억대 벌기</button>';
-                    html += '<button onclick="handleAnswer(8, \'크루즈 여행\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">크루즈 여행</button>';
-                    html += '<button onclick="handleAnswer(8, \'건강\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">건강</button>';
-                    html += '</div></div>';
-                } else if (state.currentQuestion === 9) {
-                    html += '<div class="space-y-4"><p class="text-2xl font-semibold text-gray-800">💙 딸이 아빠에게 가장 하고 싶은 말은?</p>';
-                    html += '<div class="space-y-3">';
-                    html += '<button onclick="handleAnswer(9, \'수고하셨습니다\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">수고하셨습니다</button>';
-                    html += '<button onclick="handleAnswer(9, \'감사합니다\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">감사합니다</button>';
-                    html += '<button onclick="handleAnswer(9, \'사랑합니다\')" class="w-full bg-blue-100 hover:bg-blue-200 text-gray-800 py-4 rounded-xl text-xl font-semibold transition">사랑합니다</button>';
-                    html += '</div></div>';
-                }
-                
-                html += '</div>';
-            }
-            
-            html += '</div></div>';
-            return html;
-        }
-
-        function renderFailScreen() {
-            return '<div class="min-h-screen bg-black flex items-center justify-center animate-pulse">' + renderSoundToggle() + '<h1 class="text-6xl font-bold text-red-600 animate-shake">실패입니다.</h1></div>';
-        }
-
-        function renderSuccessScreen() {
-            if (state.showMessage && !state.creditsFinished) {
-                var html = '<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 relative overflow-hidden">';
-                html += renderSoundToggle();
-                html += '<div class="absolute inset-0 overflow-hidden">';
-                html += '<div class="w-full flex justify-center animate-credits" style="animation-duration: ' + (MESSAGE_DURATION / 1000) + 's;">';
-                html += '<div class="space-y-32 text-7xl leading-relaxed max-w-7xl font-bold text-blue-600 text-center px-8">';
-                html += '<div class="space-y-6"><p>세상에 하나 밖에 없는 우리 아빠에게</p></div>';
-                html += '<div class="space-y-6"><p>항상 우리 가족을 위해</p><p>열심히 일하시는</p><p>아빠!</p></div>';
-                html += '<div class="space-y-6"><p>이 사이트도 만들 수 있던 건</p><p>다양성을 존중해주고</p><p>새로운 도전에 겁이 없는</p></div>';
-                html += '<div class="space-y-6"><p>멋진 아빠를 보고</p><p>매일 매일 보고 배운 덕분!</p></div>';
-                html += '<div class="space-y-6"><p>아빠의 유머스러운 농담부터</p><p>흰머리까지</p><p>저에게 큰 힘이 됩니다</p></div>';
-                html += '<div class="space-y-6"><p>언제나 건강하시고</p><p>행복하시길 바랍니다</p></div>';
-                html += '<div class="space-y-6"><p>생신 축하드려요!</p></div>';
-                html += '<div class="space-y-6"><p>사랑합니다 아빠</p></div>';
-                html += '<div class="space-y-6"><p>🎂🎉🎁🎈🎊💙</p></div>';
-                html += '<div class="h-32"></div>';
-                html += '</div></div></div></div>';
-                return html;
-            }
-            
-            if (state.creditsFinished && !state.showGiftMessage) {
-                return '<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center overflow-hidden relative">' + renderSoundToggle() + '<div class="text-center z-20"><p class="text-6xl mb-8 font-bold text-blue-600">작은 선물이 있습니다 🎁</p><button onclick="showGiftMessage()" class="bg-blue-500 text-white px-12 py-6 rounded-full text-3xl font-bold hover:bg-blue-600 shadow-2xl animate-bounce">선물 확인하기 💝</button></div></div>';
-            }
-            
-            if (state.showGiftMessage && !state.showGiftDetails) {
-                return '<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center overflow-hidden relative">' + renderSoundToggle() + '<div class="text-center px-8 z-20"><p class="text-5xl mb-8 font-bold text-blue-600">준비했습니다! 🎉</p><button onclick="showGiftDetails()" class="bg-blue-500 text-white px-12 py-6 rounded-full text-3xl font-bold hover:bg-blue-600 shadow-2xl">계속 💙</button></div></div>';
-            }
-            
-            if (state.showGiftDetails) {
-                var html = '<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center overflow-hidden relative">';
-                html += renderSoundToggle();
-                
-                // Money rain effect
-                html += '<div class="absolute inset-0 pointer-events-none z-40">';
-                for (var i = 0; i < 30; i++) {
-                    html += '<div class="absolute money-rain text-6xl" style="left: ' + (Math.random() * 100) + '%; animation-delay: ' + (Math.random() * 5) + 's; animation-duration: ' + (3 + Math.random() * 4) + 's;">💵</div>';
-                }
-                html += '</div>';
-                
-                html += '<div class="text-center px-8 max-w-4xl z-20">';
-                html += '<h2 class="text-7xl font-bold text-blue-600 mb-12 animate-pulse">생일 선물 🎁</h2>';
-                html += '<div class="bg-white/90 backdrop-blur rounded-3xl shadow-2xl p-16 border-4 border-blue-400">';
-                html += '<div class="space-y-8">';
-                html += '<p class="text-8xl font-bold text-green-600 animate-bounce">💰 100,000원 💰</p>';
-                html += '<p class="text-4xl text-gray-700 mt-8">주의: 아빠만을 위한 선물을 사세요! 아빠외 가족이나 타인을 위한 거에 쓰면 소멸됩니다!</p>';
-                html += '<p class="text-3xl text-blue-600 font-semibold mt-6">사랑합니다 아빠! ❤️</p>';
-                html += '</div></div></div></div>';
-                return html;
-            }
-            
-            return '';
-        }
-
-        function render() {
-            const app = document.getElementById('app');
-            
-            if (state.screen === 'landing') {
-                app.innerHTML = renderLandingScreen();
-            } else if (state.screen === 'game') {
-                app.innerHTML = renderGameScreen();
-                const q0Input = document.getElementById('q0-input');
-                if (q0Input) {
-                    q0Input.addEventListener('input', function(e) {
-                        state.q0Answer = e.target.value;
-                    });
-                }
-            } else if (state.screen === 'fail') {
-                app.innerHTML = renderFailScreen();
-            } else if (state.screen === 'success') {
-                app.innerHTML = renderSuccessScreen();
-            }
-        }
-
-        initFloatingEmojis();
+/* ─ ACTIONS ─ */
+function onHoverTitle() {
+    if (!state.hoverText) sfxHover();
+    state.hoverText = true; state.showButtons = true; render();
+}
+function handleNoProximity(e) {
+    if (state.hearts <= 0) return;
+    sfxWrong();
+    const r = e.target.getBoundingClientRect();
+    state.noButtonPos = {
+        x: Math.min(Math.random()*window.innerWidth, window.innerWidth-r.width-20),
+        y: Math.min(Math.random()*window.innerHeight, window.innerHeight-r.height-20)
+    };
+    state.yesButtonScale += 0.25;
+    state.hearts = Math.max(0, state.hearts-1);
+    if (state.hearts===0) { sfxGameOver(); setTimeout(()=>{state.screen='fail';render();},500); }
+    else { sfxLifeLost(); render(); }
+}
+function handleNoClick() { sfxWrong(); alert('오류: 다시 생각해보세요!'); }
+function handleYesClick() { sfxLevelUp(); state.screen='game'; render(); flashScan(); }
+function handleAnswer(q, ans) {
+    sfxClick();
+    if (ans === CORRECT_ANSWERS[q]) {
+        sfxCorrect(); flashScan();
+        if (q===9) { setTimeout(()=>sfxFanfare(),400); state.showCongratsButton=true; }
+        else { state.currentQuestion=q+1; }
         render();
+    } else {
+        sfxWrong(); flashRed();
+        state.hearts = Math.max(0, state.hearts-1);
+        if (state.hearts===0) { sfxGameOver(); setTimeout(()=>{state.screen='fail';render();},500); }
+        else { sfxLifeLost(); render(); }
+    }
+}
+function submitQ0() {
+    const inp = document.getElementById('q0-input');
+    if (inp) state.q0Answer = inp.value;
+    handleAnswer(0, state.q0Answer);
+}
+function doShowMsg() {
+    sfxCreditsStart();
+    startBirthdayBGM();
+    state.screen='success'; state.showMessage=true; render();
+    setTimeout(()=>{state.creditsFinished=true;render();}, MESSAGE_DURATION);
+}
+function doShowGiftMsg() { sfxCoinShower(); state.showGiftMessage=true; render(); }
+function doShowGiftDetails() {
+    sfxCoinShower(); setTimeout(()=>sfxCoinShower(),400);
+    state.showGiftDetails=true; render();
+}
 
-        // Initialize audio context and start background music on first user interaction
-        document.addEventListener('click', function initAudio() {
-            if (audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-            // Start background music
-            if (state.musicEnabled && backgroundMusicNodes.length === 0) {
-                createBackgroundMusic();
-            }
-        }, { once: true });
-    </script>
+function flashScan() {
+    const d=document.createElement('div'); d.className='scan-flash';
+    document.body.appendChild(d); setTimeout(()=>d.remove(),700);
+}
+function flashRed() {
+    const d=document.createElement('div'); d.className='red-flash';
+    document.body.appendChild(d); setTimeout(()=>d.remove(),600);
+}
+
+/* ─ RENDER ─ */
+function render() {
+    const app = document.getElementById('app');
+    if (state.screen==='landing')      app.innerHTML = renderLanding();
+    else if (state.screen==='game')    {
+        app.innerHTML = renderGame();
+        const inp = document.getElementById('q0-input');
+        if (inp) {
+            inp.addEventListener('input', e=>state.q0Answer=e.target.value);
+            inp.addEventListener('keydown', e=>{ if(e.key==='Enter') submitQ0(); });
+        }
+    }
+    else if (state.screen==='fail')    app.innerHTML = renderFail();
+    else if (state.screen==='success') app.innerHTML = renderSuccess();
+}
+
+initFloatingEmojis();
+render();
+</script>
 </body>
 </html>
